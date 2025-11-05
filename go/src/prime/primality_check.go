@@ -1,4 +1,4 @@
-package src
+package prime
 
 import (
 	"crypto/rand"
@@ -81,7 +81,7 @@ func findModulus(base, exponent, modulus uint64) uint64 {
 	return result
 }
 
-func generatePrime(bits, k int) uint64 {
+func GeneratePrime(bits, k int) uint64 {
 	for {
 		x, err := rand.Int(rand.Reader, big.NewInt(100))
 		if err != nil {

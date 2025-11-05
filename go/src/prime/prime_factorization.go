@@ -1,4 +1,4 @@
-package src
+package prime
 
 import (
 	"fmt"
@@ -194,11 +194,9 @@ func (e *ECMConfig) GetFactor(q *big.Int) []uint64 {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for m.Cmp(big.NewInt(1)) != 0 && m.ProbablyPrime(60) {
-		fmt.Println("Traverse Curve == ", m)
 		for i := 0; i < e.MaxCurves; i++ {
 			curve, point, curveErr := e.InitializeWeierstrassCurve(m, r)
 			if curveErr != nil {
-				fmt.Println("CurveErr = ", curveErr)
 				continue
 			}
 

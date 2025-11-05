@@ -1,4 +1,4 @@
-package src
+package sampler
 
 import (
 	"math"

@@ -1,6 +1,8 @@
-package src
+package prime
 
-import "math"
+import (
+	"math"
+)
 
 // GenerateModuliChain
 //

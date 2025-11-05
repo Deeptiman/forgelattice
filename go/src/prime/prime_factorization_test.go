@@ -1,7 +1,8 @@
-package src
+package prime
 
 import (
 	"fmt"
+	"github.com/Deeptiman/ntt-hardware-accelerator/go/src/utils"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"math/rand"
@@ -62,7 +63,7 @@ func TestGetPrimeFactor(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(fmt.Sprintf("Find factors for [%d] ", testCase.modulus), func(t *testing.T) {
-			m := NewBigInt().SetUint64(testCase.modulus)
+			m := utils.NewBigInt().SetUint64(testCase.modulus)
 			algorithms := []Algorithm{ECM}
 			for _, algo := range algorithms {
 				factors := GetPrimeFactor(m, algo)
