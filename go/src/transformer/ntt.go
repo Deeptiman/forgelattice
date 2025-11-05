@@ -220,7 +220,7 @@ func (n *NTTTable) modPow(base, exp, mod int64) int64 {
 	res := int64(1)
 	for exp > 0 { // binary exponentiation
 		// Check if last least significant bit is odd-bit.
-		if (exp>>1)&1 == 1 {
+		if exp&1 == 1 {
 			res = n.modMul(res, base, mod)
 		}
 		base = n.modMul(base, base, mod)
