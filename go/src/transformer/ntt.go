@@ -58,76 +58,6 @@ func (n *NTTTable) FindPrimitiveRoots(factors []uint64) int64 {
 	return -1
 }
 
-// PrecomputeTwiddleFactor pre-calculates the magic-multipliers (twiddle factors) for the NTT.
-func (n *NTTTable) PrecomputeTwiddleFactor() [][]int64 {
-	// problemSize computes log₂(N), the number of NTT stages (sub-problems), computed with bits.TrailingZeros
-	// for any power of 2 N.
-	//
-	// bits.TrailingZeros returns of number of trailing 0 bits in the binary representation of n.
-	// And the number of twiddles in each radix stages will be allocated based on number of 0s found.
-	//
-	// This returns exact number of butterfly stages for Radix-2 NTT.
-	//
-	// Example:
-	// 	N = 16 -> log₂(16) = 4 --> 4 sub-problems (m=2, 4, 8, 16)
-	problemSize := bits.TrailingZeros(uint(n.N))
-	twiddles := make([][]int64, problemSize)
-	stage := 0
-	for subProblems := 2; subProblems <= n.N; subProblems <<= 1 {
-		// Compute magic-multiplier {wm} for the subProblems size.
-		wm := n.modPow(n.PrimitiveRoot, int64(n.N/subProblems), n.Q)
-		// Allocate number of twiddles by equally spacing required twiddles for the subProblem size.
-		//
-		//
-		// Why equally spaced twiddles?
-		//
-		// Twiddle factors are precomputed, equally spaced multipliers used in NTT to ensure balanced
-		// computations across sub-problems (butterflies). They act as fixed "exchange rates" in each
-		// stage, enabling point-wise multiplications with polynomial coefficients. More specifically
-		// these twiddles combines pairs of coefficients within groups, facilitating efficient
-		// frequency decomposition for fast polynomial operations.
-		twiddles[stage] = make([]int64, subProblems/2)
-		wi := int64(1)
-		for j := 0; j < subProblems/2; j++ {
-			twiddles[stage][j] = wi
-			wi = n.modMul(wi, wm, n.Q)
-		}
-		stage++
-	}
-	return twiddles
-}
-
-// PrecomputeTwiddleFactorsByDIF precomputes all twiddle factors required for the DIF (inverse) NTT.
-// This eliminates expensive modular exponentiation at runtime and enables constant-time access via read-only
-// BRAM, achieving high-throughput pipelined NTT computation on FPGA.
-func (n *NTTTable) PrecomputeTwiddleFactorsByDIF() [][]int64 {
-	// problemSize computes log₂(N), the number of NTT stages (sub-problems), computed with bits.TrailingZeros
-	// for any power of 2 N.
-	//
-	// bits.TrailingZeros returns of number of trailing 0 bits in the binary representation of n.
-	// And the number of twiddles in each radix stages will be allocated based on number of 0s found.
-	//
-	// This returns exact number of butterfly stages for Radix-2 NTT.
-	//
-	// Example:
-	// 	N = 16 -> log₂(16) = 4 --> 4 sub-problems (m=2, 4, 8, 16)
-	problemSize := bits.TrailingZeros(uint(n.N))
-	twiddles := make([][]int64, problemSize)
-	stage := 0
-	for subProblems := n.N; subProblems >= 2; subProblems >>= 1 {
-		wm := n.modPow(n.PrimitiveRoot, int64(n.N/subProblems), n.Q)
-		wmInv := n.modPow(wm, n.Q-2, n.Q)
-		twiddles[stage] = make([]int64, subProblems/2)
-		wi := int64(1)
-		for j := 0; j < subProblems/2; j++ {
-			twiddles[stage][j] = wi
-			wi = n.modMul(wi, wmInv, n.Q)
-		}
-		stage++
-	}
-	return twiddles
-}
-
 // BitReverse performs a perfect shuffle of the indices using bit-reversal permutation. This reorders NTT domain
 // coefficients to produce natural-order (NR) output in DIT (forward) NTT or prepares bit-reversed coefficients to
 // transform into natural-order (NR) input for DIF (inverse) operation.
@@ -237,10 +167,45 @@ func (n *NTTTable) InverseNTTByDIF(coeffs []int64) []int64 {
 	return coeffsInput
 }
 
-// InverseNTTByDIT computes the inverse transformation in time domain.
+// InverseNTTByDIT computes the inverse NTT using DIT (Decimation-In-Time).
+// Input: NTT-domain coefficients in natural order (NN).
+// Output: Time-domain coefficients in reverse order (NR).
+//
+// - Uses inverse twiddles: ω^(-1) = ω^(Q-2) mod Q
+// - Applies final scaling by N^(-1) mod Q
+// - Requires bit-reversal after to get natural order (NN)
+//
+// Note: DIF INTT is preferred for streaming (NN → NN, no bit-rev).
 func (n *NTTTable) InverseNTTByDIT(coeffs []int64) []int64 {
+	coeffsInput := make([]int64, n.N)
+	copy(coeffsInput, coeffs)
 
-	return []int64{}
+	// Precomputes inverse twiddles: wˆ(-1)
+	invTwiddles := n.PrecomputeInverseTwiddleFactors()
+
+	stage := 0
+	for subProblems := 2; subProblems <= n.N; subProblems <<= 1 {
+		stageTwiddles := invTwiddles[stage]
+		for i := 0; i < n.N; i += subProblems {
+			for j := 0; j < subProblems/2; j++ {
+				wi := stageTwiddles[j]
+				u := coeffsInput[i+j]
+				v := coeffsInput[i+j+subProblems/2]
+				// U + V mod Q
+				coeffsInput[i+j] = n.modMul(u+v, 1, n.Q)
+				// U - Wi * V mod Q
+				coeffsInput[i+j+subProblems/2] = n.modMul(u-n.modMul(wi, v, n.Q), 1, n.Q)
+			}
+		}
+		stage++
+	}
+
+	// Final scaling: multiply by Nˆ(-1) mod Q
+	nInv := n.modPow(int64(n.N), n.Q-2, n.Q)
+	for i := 0; i < n.N; i++ {
+		coeffsInput[i] = n.modMul(coeffsInput[i], nInv, n.Q)
+	}
+	return coeffsInput
 }
 
 func (n *NTTTable) modMul(a, b, mod int64) int64 {
