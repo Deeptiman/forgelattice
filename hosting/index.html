@@ -1,61 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>forgekey.systems</title>
-
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
+    <meta charset="UTF-8" />
+    <title>ForgeKey Systems</title>
     <style>
         body {
+            background-color: white;
             margin: 0;
-            font-family: 'Inter', sans-serif;
-            background: #ffffff;
-            color: #000000;
-            height: 100vh;
+            padding: 0;
+            font-family: "Roboto Thin", serif;
+            color: #000;
+
+            /* KEY BACKGROUND PATTERN */
+            background-image: radial-gradient(#00000022 1px, transparent 1px),
+            repeating-linear-gradient(0deg, transparent, transparent 20px, #00000005 20px, #00000005 21px);
+        }
+
+        /* Replace dots with key icon layer */
+        body::before {
+            content: "🗝";
+            font-size: 12px;
+            opacity: 0.08;   /* VERY faint */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+
+            /* Tile the key icon */
+            background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><text x='0' y='32' font-size='32'>🗝</text></svg>");
+            background-repeat: repeat;
+            background-size: 40px 40px;
+            z-index: -1;
+        }
+
+        .quote-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
-
-            /* Light dotted pattern */
-            background-image:
-                    radial-gradient(rgba(0,0,0,0.08) 1px, transparent 1px),
-                    radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
-            background-size: 40px 40px, 80px 80px;
-            background-position: 0 0, 20px 20px;
-        }
-
-        .quote-container {
-            max-width: 850px;
+            height: 100vh;
             padding: 20px;
             text-align: center;
         }
 
         .quote {
-            font-size: 28px;
-            font-weight: 300;
+            font-size: 26px;
             font-style: italic;
-            line-height: 1.4;
-            color: #000000;
-        }
-
-        .author {
-            margin-top: 15px;
-            font-size: 20px;
-            font-weight: 400;
-            color: #333333;
-            font-style: italic;
+            max-width: 800px;
+            line-height: 1.5;
         }
     </style>
 </head>
-
 <body>
-<div class="quote-container">
+<div class="quote-wrapper">
     <div class="quote">
-        “256-bit AES keys should be used in order to achieve a 128-bit security level against quantum attacks.”
+        “256-bit AES keys should be used in order to achieve a 128-bit security level against quantum attacks.” – Alfred Menezes
     </div>
-    <div class="author">— Alfred Menezes</div>
 </div>
 </body>
 </html>
