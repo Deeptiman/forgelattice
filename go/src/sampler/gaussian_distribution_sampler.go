@@ -1,42 +1,12 @@
-package src
+package sampler
 
 import (
 	crand "crypto/rand"
 	"encoding/binary"
-	"fmt"
 	"math"
 	"math/rand"
 	"sort"
 )
-
-type SamplingMethod string
-
-const (
-	GAUSSIAN SamplingMethod = "Gaussian"
-	ZIGGURAT SamplingMethod = "Ziggurat"
-)
-
-type Sampler struct {
-	N       int
-	moduliQ []uint64
-	moduliP []uint64
-	seed    int64
-	entropy *rand.Rand
-	method  SamplingMethod
-}
-
-func NewSampler(logN int, moduliQ, moduliP []uint64) *Sampler {
-	return &Sampler{
-		N:       1 << logN,
-		moduliQ: moduliQ,
-		moduliP: moduliQ,
-	}
-}
-
-// Poly represents a polynomial in Ring-LWE with coefficients factored across multiple moduli.
-type Poly struct {
-	Coeffs [][]int64
-}
 
 // PDFNormal computes the probability density function (PDF) of a Gaussian distribution.
 // Parameters:
@@ -127,6 +97,15 @@ func (s *Sampler) ExtendBasis(polyQ Poly) Poly {
 	return polyQP
 }
 
+// GenerateNoisyPolynomial samples a noisy polynomial of degree N from a discrete Gaussian distribution
+// with mean μ and standard deviation σ, using rejection sampling over the range [min, max].
+//
+// - Each coefficient is independently sampled and centered in [-Q/2, Q/2) for RNS compatibility.
+// - Coefficients are reduced modulo each Qᵢ in moduliQ using CRT for multi-modulus representation.
+// - The resulting polynomial is in R_Q (Ring-LWE) and extended to R_QP via ExtendBasis.
+//
+// Used in lattice-based PQC (Kyber, Dilithium) for secret/error polynomials and in CKKS for
+// fresh ciphertext noise. Rejection sampling ensures statistical closeness to ideal Gaussian.
 func (s *Sampler) GenerateNoisyPolynomial(N int, mu, sigma float64, min, max int64) Poly {
 	poly := Poly{Coeffs: make([][]int64, len(s.moduliQ))}
 	for j := 0; j < len(s.moduliQ); j++ {
@@ -169,7 +148,7 @@ func (s *Sampler) GenerateNoisyPolynomial(N int, mu, sigma float64, min, max int
 				residues[j] = poly.Coeffs[j][i]
 			}
 		}
-		// Compute unified coefficient using Chinese Remainder Theorem (CRT)
+		// Compute unified coefficient using Chinese Remainder Theorem (CRT).
 		unified := s.CRTForRingLWE(residues, s.moduliQ, invs, product)
 		// Assign CRT-reduced values back to poly.Coeffs[j][i]
 		for j := 0; j < len(s.moduliQ); j++ {
@@ -177,48 +156,62 @@ func (s *Sampler) GenerateNoisyPolynomial(N int, mu, sigma float64, min, max int
 				poly.Coeffs[j][i] = coeff
 			}
 			if poly.Coeffs[j][i] < 0 {
-				poly.Coeffs[j][i] += int64(s.moduliQ[j]) // Ensure positive
+				poly.Coeffs[j][i] += int64(s.moduliQ[j])
 			}
 		}
 	}
 	return s.ExtendBasis(poly)
 }
 
+// CRTForRingLWE reconstructs a unified coefficient in Z_M from its residues modulo each Qᵢ using the
+// Chinese Remainder Theorem (CRT).
+//
+// To give an analogy of currency exchange in global finance:
+//   - Each residue cⱼ ≡ c (mod Qⱼ) is like a local currency value.
+//   - Each Qⱼ has its own volatility rate (market size).
+//   - M = ∏Qⱼ is the global market capitalization.
+//   - (M/Qⱼ) is the exchange rate from local to global.
+//   - inv(M/Qⱼ) is the conversion factor back to local.
+//
+// CRT computes the exact global value of a financial transaction across volatile markets enabling fast,
+// parallel modular arithmetic in RNS (Residue Number System).
+//
+// In RNS system, each Qᵢ acts like financial market with its own volatility. The CRT is the settlement engine
+// that converts the local residue into a single, globally consistent value like international trade exchange
+// forum reconcile transaction across currencies.
 func (s *Sampler) CRTForRingLWE(coeffs []int64, moduli []uint64, invs []int64, product uint64) int64 {
 	// Compute the product of all moduli (M = m[0] * m[1] * m[2] .... * m[n]) to get the composite modulus.
 	result := int64(0)
+	M := int64(product)
 	for i, coeff := range coeffs {
-		pi := int64(product / moduli[i]) // product mod moduli[i]
-		result += coeff * pi * invs[i]
-		result %= int64(product)
+		pi := M / int64(moduli[i]) // Exchange rate: M/Qᵢ
+		term := coeff * pi % M     // Local ---> Global
+		term = term * invs[i] % M  // Apply conversation factor
+		result = (result + term) % M
 	}
 	return result
 }
 
+// EntropySource initializes the cryptographically secure pseudo-random number generator (CSPRNG) using a
+// high-entropy seed from the operating system's randomness pool.
+//
+// Thinks of its as the Global Money Bank the ultimate financial institution that funds the entire cryptographic
+// economy with unpredictable high-entropy capital.
 func (s *Sampler) EntropySource() error {
 	var randomBufferN [1024]byte
+	// 1. First 8-bytes --> 64-bit seed for CSPRNG (initial use). This seed produces all Gaussian sampling for
+	// lattice-based PQC (Kyber, Dilithium) and homomorphic encryption (CKKS).
+	//
+	// 2. The remaining 1016 bytes are reserved for future entropy expansion.
 	if _, err := crand.Read(randomBufferN[:]); err != nil {
 		return err
 	}
 	s.seed = int64(binary.BigEndian.Uint64(randomBufferN[:8]))
 	s.entropy = rand.New(rand.NewSource(s.seed))
+
+	// Reset the buffer to zero.
+	for i := range randomBufferN {
+		randomBufferN[i] = 0
+	}
 	return nil
-}
-
-func (s *Sampler) GenerateCoefficients() Poly {
-	if err := s.EntropySource(); err != nil {
-		panic(fmt.Errorf("failed to generate entropy source=%v", err))
-	}
-	switch s.method {
-	case GAUSSIAN:
-		mean := 0.0
-		sigma := 2.0
-		minRange, maxRange := int64(-6), int64(6)
-		return s.GenerateNoisyPolynomial(s.N, mean, sigma, minRange, maxRange)
-	case ZIGGURAT:
-
-	default:
-		panic("choose sampling method between GAUSSIAN or ZIGGURAT")
-	}
-	return Poly{}
 }

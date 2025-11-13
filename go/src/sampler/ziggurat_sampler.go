@@ -1,4 +1,4 @@
-package src
+package sampler
 
 import (
 	"math"
@@ -85,8 +85,8 @@ func (z *ZigguratTable) NormalSampling(prng *rand.Rand) (float64, uint64) {
 	const rn = 3.442619855899 // right most boundary for tail sampling
 	for {
 		juint32 := uint32(prng.Int63() >> 31)
-		j := int32(juint32 & 0x7fffffff)
 		sign := uint64(juint32 >> 31)
+		j := int32(juint32 & 0x7fffffff)
 		i := j & 0x7F
 		x := float64(j) * float64(z.wn[i])
 		if uint32(j) < z.kn[i] {
