@@ -81,3 +81,11 @@ func TestInitializeWeierstrassCurve(t *testing.T) {
 	_, _, e := WithECM().InitializeWeierstrassCurve(m, r)
 	assert.Nil(t, e)
 }
+
+func TestFactorByPollardRho(t *testing.T) {
+	n := big.NewInt(8380416) // q=8380417, Dilithium: q - 1
+	assert.Equal(t, GetPrimeFactor(n, PollardRho), []uint64{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 11, 31})
+
+	n = big.NewInt(3328) // q=3329, Kyber: q - 1
+	assert.Equal(t, GetPrimeFactor(n, PollardRho), []uint64{2, 2, 2, 2, 2, 2, 2, 2, 13})
+}

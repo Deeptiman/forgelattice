@@ -1,6 +1,9 @@
 package transformer
 
-import "math/bits"
+import (
+	"github.com/Deeptiman/ntt-hardware-accelerator/go/src/utils"
+	"math/bits"
+)
 
 // PrecomputeTwiddleFactor pre-calculates the magic-multipliers (twiddle factors) for the NTT.
 func (n *NTTTable) PrecomputeTwiddleFactor() [][]int64 {
@@ -19,7 +22,7 @@ func (n *NTTTable) PrecomputeTwiddleFactor() [][]int64 {
 	stage := 0
 	for subProblems := 2; subProblems <= n.N; subProblems <<= 1 {
 		// Compute magic-multiplier {wm} for the subProblems size.
-		wm := n.modPow(n.PrimitiveRoot, int64(n.N/subProblems), n.Q)
+		wm := utils.ModPow(n.PrimitiveRoot, int64(n.N/subProblems), n.Q)
 		// Allocate number of twiddles by equally spacing required twiddles for the subProblem size.
 		//
 		//
@@ -34,7 +37,7 @@ func (n *NTTTable) PrecomputeTwiddleFactor() [][]int64 {
 		wi := int64(1)
 		for j := 0; j < subProblems/2; j++ {
 			twiddles[stage][j] = wi
-			wi = n.modMul(wi, wm, n.Q)
+			wi = utils.ModMul(wi, wm, n.Q)
 		}
 		stage++
 	}
@@ -59,13 +62,13 @@ func (n *NTTTable) PrecomputeTwiddleFactorsByDIF() [][]int64 {
 	twiddles := make([][]int64, problemSize)
 	stage := 0
 	for subProblems := n.N; subProblems >= 2; subProblems >>= 1 {
-		wm := n.modPow(n.PrimitiveRoot, int64(n.N/subProblems), n.Q)
-		wmInv := n.modPow(wm, n.Q-2, n.Q)
+		wm := utils.ModPow(n.PrimitiveRoot, int64(n.N/subProblems), n.Q)
+		wmInv := utils.ModPow(wm, n.Q-2, n.Q)
 		twiddles[stage] = make([]int64, subProblems/2)
 		wi := int64(1)
 		for j := 0; j < subProblems/2; j++ {
 			twiddles[stage][j] = wi
-			wi = n.modMul(wi, wmInv, n.Q)
+			wi = utils.ModMul(wi, wmInv, n.Q)
 		}
 		stage++
 	}
@@ -83,13 +86,13 @@ func (n *NTTTable) PrecomputeInverseTwiddleFactors() [][]int64 {
 	twiddles := make([][]int64, problemSize)
 	stage := 0
 	for subProblems := 2; subProblems <= n.N; subProblems <<= 1 {
-		wm := n.modPow(n.PrimitiveRoot, int64(n.N/subProblems), n.Q)
-		wmInv := n.modPow(wm, n.Q-2, n.Q)
+		wm := utils.ModPow(n.PrimitiveRoot, int64(n.N/subProblems), n.Q)
+		wmInv := utils.ModPow(wm, n.Q-2, n.Q)
 		twiddles[stage] = make([]int64, subProblems/2)
 		wi := int64(1)
 		for j := 0; j < subProblems/2; j++ {
 			twiddles[stage][j] = wi
-			wi = n.modMul(wi, wmInv, n.Q)
+			wi = utils.ModMul(wi, wmInv, n.Q)
 		}
 		stage++
 	}

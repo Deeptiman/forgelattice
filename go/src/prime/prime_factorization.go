@@ -57,50 +57,6 @@ func GetPrimeFactor(q *big.Int, algo Algorithm) []uint64 {
 	}
 }
 
-func pollardRho(x, c, q *big.Int) (y *big.Int) {
-	y = new(big.Int).Exp(x, new(big.Int).SetUint64(2), q)
-	y.Add(y, c)
-	y.Mod(y, q)
-	return y
-}
-
-// FactorByPollardRho finds the prime factorization using PollardRho algorithm.
-func FactorByPollardRho(q *big.Int) []uint64 {
-	zero := new(big.Int).SetUint64(0)
-	one := new(big.Int).SetUint64(1)
-	diff := new(big.Int)
-	factors := make([]uint64, 0)
-
-	for q.Cmp(one) != 0 {
-		if isPrime(q.Uint64()) {
-			return append(factors, q.Uint64())
-		}
-
-		x := new(big.Int).SetUint64(2)
-		y := new(big.Int).SetUint64(2)
-		for i := 2; i < 10; i++ {
-			c := new(big.Int).SetUint64(uint64(i))
-			e := new(big.Int)
-			factor := new(big.Int).SetUint64(1)
-
-			for factor.Cmp(zero) != 0 && factor.Cmp(q) != 0 {
-				x = pollardRho(x, c, q)
-				y = pollardRho(pollardRho(y, c, q), c, q)
-				if factor.GCD(nil, nil, diff.Sub(x, y), q); factor.Cmp(one) != 0 {
-					factors = append(factors, factor.Uint64())
-					for e.Mod(q, factor).Cmp(zero) == 0 {
-						q.Quo(q, factor)
-					}
-					if q.Cmp(one) == 0 {
-						return factors
-					}
-				}
-			}
-		}
-	}
-	return factors
-}
-
 // WithECM returns a default configuration for running the Elliptic Curve Method (ECM) for integer factorization.
 func WithECM() *ECMConfig {
 	return &ECMConfig{

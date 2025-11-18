@@ -2,7 +2,6 @@ package prime
 
 import (
 	"fmt"
-	"github.com/Deeptiman/ntt-hardware-accelerator/go/src"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -23,7 +22,7 @@ func TestGenerateModuliChain(t *testing.T) {
 }
 
 func TestGeneratePrime(t *testing.T) {
-	primeNumber := src.generatePrime(64, 5)
+	primeNumber := GeneratePrime(64, 5)
 	bigNum := new(big.Int)
 	assert.True(t, bigNum.SetUint64(primeNumber).ProbablyPrime(5))
 }
