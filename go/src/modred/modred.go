@@ -21,8 +21,9 @@ var (
 )
 
 type ModRed struct {
-	Q             uint64
-	montConstants montgomeryConstants
+	Q              uint64
+	Dilithium_QInv uint32
+	montConstants  montgomeryConstants
 }
 
 type montgomeryConstants struct {
@@ -81,10 +82,10 @@ func (r *ModRed) FromMontgomery(x uint64) uint64 {
 	return r.MontgomeryMul(x, 1)
 }
 
-// MontgomeryMulWithKyberPQC ...
+// MontgomeryMulWithKyber ...
 //
 // Source: https://github.com/cloudflare/circl/blob/main/pke/kyber/internal/common/field.go#L4
-func (r *ModRed) MontgomeryMulWithKyberPQC(a, b int32) int16 {
+func (r *ModRed) MontgomeryMulWithKyber(a, b int32) int16 {
 	x := a * b
 	// Why CIRCL uses 16-bit Montgomery for Kyber?
 	// - Kyber q = 3329 < 2¹², so its easily fits in a 16-bit word. Choosing R = 2¹⁶ is natural because its
@@ -101,21 +102,21 @@ func (r *ModRed) MontgomeryMulWithKyberPQC(a, b int32) int16 {
 	return int16(uint32(x-int32(m)*int32(Kyber_Q)) >> 16)
 }
 
-// ToMontgomeryWithKyberPQC ...
-func (r *ModRed) ToMontgomeryWithKyberPQC(x int32) int16 {
+// ToMontgomeryWithKyber ...
+func (r *ModRed) ToMontgomeryWithKyber(x int32) int16 {
 	// q = 3329
 	// 1353 = R² mod q.
-	return r.MontgomeryMulWithKyberPQC(x, 1353)
+	return r.MontgomeryMulWithKyber(x, 1353)
 }
 
-func (a Algorithm) WithModRed(q uint64) *ModRed {
+func (a Algorithm) ToModRed(q uint64) *ModRed {
 	switch a {
 	case Kyber:
-		// Works with Barrett
+		// TODO: Works with Barrett
 	case Dilithium:
-		// Works with Montgomery
+		// TODO: Works with Montgomery
 	case Generic:
-		// Apply generic modular reductions comparing modulus Q to apply Barrett or Montgomery.
+		// TODO: Apply generic modular reductions comparing modulus Q to apply Barrett or Montgomery.
 	}
-	return &ModRed{q, computeMontgomeryConstants(q)}
+	return &ModRed{Q: q, montConstants: computeMontgomeryConstants(q)}
 }
