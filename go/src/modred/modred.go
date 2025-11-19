@@ -11,8 +11,6 @@ const (
 	Kyber     Algorithm = "PQC_Kyber"
 	Dilithium Algorithm = "PQC_Dilithium"
 	Generic   Algorithm = "Homomorphic_Encryption"
-
-	Kyber_Q = 3329 //
 )
 
 var (
@@ -82,41 +80,16 @@ func (r *ModRed) FromMontgomery(x uint64) uint64 {
 	return r.MontgomeryMul(x, 1)
 }
 
-// MontgomeryMulWithKyber ...
-//
-// Source: https://github.com/cloudflare/circl/blob/main/pke/kyber/internal/common/field.go#L4
-func (r *ModRed) MontgomeryMulWithKyber(a, b int32) int16 {
-	x := a * b
-	// Why CIRCL uses 16-bit Montgomery for Kyber?
-	// - Kyber q = 3329 < 2¹², so its easily fits in a 16-bit word. Choosing R = 2¹⁶ is natural because its
-	// the next convenient machine word power-of-two that's large than 3329.
-	// - The standard 16-bit Montgomery reduction for Kyber can be written using int32 multiples and >> 16
-	// shifts.
-	// - With R = 2¹⁶ reduction can exploit simple shifts and 16/32-bit arithmetic to implement Montgomery
-	// reduction cheaply.
-	//
-	// 	R = 2¹⁶
-	//
-	//	q' := 62209 = q⁻¹ mod R.
-	m := int16(x * 62209)
-	return int16(uint32(x-int32(m)*int32(Kyber_Q)) >> 16)
-}
-
-// ToMontgomeryWithKyber ...
-func (r *ModRed) ToMontgomeryWithKyber(x int32) int16 {
-	// q = 3329
-	// 1353 = R² mod q.
-	return r.MontgomeryMulWithKyber(x, 1353)
-}
-
 func (a Algorithm) ToModRed(q uint64) *ModRed {
+	montRed := &ModRed{Q: q, montConstants: computeMontgomeryConstants(q)}
 	switch a {
 	case Kyber:
 		// TODO: Works with Barrett
 	case Dilithium:
 		// TODO: Works with Montgomery
+		montRed.Dilithium_QInv = computeDilithiumRedConstant()
 	case Generic:
 		// TODO: Apply generic modular reductions comparing modulus Q to apply Barrett or Montgomery.
 	}
-	return &ModRed{Q: q, montConstants: computeMontgomeryConstants(q)}
+	return montRed
 }

@@ -54,3 +54,42 @@ func TestModRed_MontgomeryMulWithDilithium(t *testing.T) {
 		assert.Equal(t, b%uint32(Dilithium_Q), decodedB)
 	}
 }
+
+func TestModRed_KyberMontgomeryConstant(t *testing.T) {
+	RmodQ := uint32((uint64(1) << 16) % uint64(Kyber_Q))
+	assert.Equal(t, RmodQ, uint32(2285))
+	assert.Equal(t, R2modQ, uint32(1353))
+
+	r := &ModRed{}
+	oneEnc := uint32((uint64(1) << 16) % uint64(Kyber_Q))
+	res := r.MontgomeryMulWithKyber(int32(oneEnc), int32(oneEnc))
+	assert.Equal(t, int16(oneEnc), res)
+
+	qm1 := int32(Kyber_Q - 1)
+	qm1Enc := r.ToMontgomeryWithKyber(qm1)
+	prod := r.MontgomeryMulWithKyber(int32(qm1Enc), int32(qm1Enc))
+	decoded := r.MontgomeryMulWithKyber(int32(prod), 1)
+	assert.Equal(t, decoded, int16(1))
+}
+
+func TestModRed_MontgomeryMulWithKyber(t *testing.T) {
+	r := &ModRed{}
+	Q := big.NewInt(int64(Kyber_Q))
+	for i := 0; i < 2000; i++ {
+		ai, _ := rand.Int(rand.Reader, Q)
+		bi, _ := rand.Int(rand.Reader, Q)
+		a := int32(ai.Int64())
+		b := int32(bi.Int64())
+
+		am := r.ToMontgomeryWithKyber(a)
+		bm := r.ToMontgomeryWithKyber(b)
+
+		prod := r.MontgomeryMulWithKyber(int32(am), int32(bm))
+		ab := new(big.Int).Mul(ai, bi)
+		expectedEnc := uint32((ab.Uint64() * (uint64(1) << 16)) % uint64(Kyber_Q))
+		assert.Equal(t, uint32(prod), expectedEnc)
+
+		decoded := r.MontgomeryMulWithKyber(int32(prod), 1)
+		assert.Equal(t, int(decoded), int(new(big.Int).Mul(ai, bi).Mod(ab, Q).Int64()))
+	}
+}
