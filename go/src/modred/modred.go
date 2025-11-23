@@ -2,7 +2,6 @@ package modred
 
 import (
 	"math/big"
-	"math/bits"
 )
 
 type Algorithm string
@@ -19,14 +18,29 @@ var (
 )
 
 type ModRed struct {
-	Q              uint64
-	Dilithium_QInv uint32
-	montConstants  montgomeryConstants
+	Q               uint64
+	Dilithium_QInv  uint32
+	montConstants   montgomeryConstants
+	barrettConstant barrettConstant
+}
+
+type barrettConstant struct {
+	mu32 uint64
+	mu64 uint64
 }
 
 type montgomeryConstants struct {
 	qInv uint64
 	r2   uint64
+}
+
+func computeMu64(q uint64) uint64 {
+	maxBit := ^uint64(0) //2⁶⁴ - 1
+	return maxBit / q
+}
+
+func computeBarrettRedConstant(q uint64) barrettConstant {
+	return barrettConstant{mu32: (uint64(1) << 32) / q, mu64: computeMu64(q)}
 }
 
 // ComputeMontgomeryConstants
@@ -43,53 +57,17 @@ func computeMontgomeryConstants(q uint64) montgomeryConstants {
 	return montgomeryConstants{qInv.Uint64(), R2.Uint64()}
 }
 
-// MontgomeryMul ...
-func (r *ModRed) MontgomeryMul(a, b uint64) uint64 {
-	// 128-bits product and return highBit, lowBit t = bits.Mul64(a, b)
-	highBits, lowBits := bits.Mul64(a, b)
-	// [ 128 ......................... 64 | 63 ......................... 0 ]
-	//	HIGH 64 bits                       LOW 64 bits
-	//
-	// Low 64 bits → the bottom half
-	// (least-significant 64 bits, bits 0–63)
-	//
-	// High 64 bits -> the top half
-	// (most-significant 64 bits, bits 64-127)
-	//
-	// m = (lowBits * qInv) mod R (since multiplication modulo R is low 64 bit)
-	m := lowBits * r.montConstants.qInv
-
-	// Extract high bits from m * q
-	mHigh, _ := bits.Mul64(m, r.Q)
-
-	u := highBits - mHigh + r.Q
-	// Check if overflow occurs with the addition above the given modulo Q.
-	if u >= r.Q {
-		u -= r.Q
-	}
-	return u
-}
-
-// ToMontgomery ...
-func (r *ModRed) ToMontgomery(x uint64) uint64 {
-	return r.MontgomeryMul(x, r.montConstants.r2)
-}
-
-// FromMontgomery ...
-func (r *ModRed) FromMontgomery(x uint64) uint64 {
-	return r.MontgomeryMul(x, 1)
-}
-
 func (a Algorithm) ToModRed(q uint64) *ModRed {
-	montRed := &ModRed{Q: q, montConstants: computeMontgomeryConstants(q)}
+	r := &ModRed{Q: q}
 	switch a {
 	case Kyber:
 		// TODO: Works with Barrett
 	case Dilithium:
-		// TODO: Works with Montgomery
-		montRed.Dilithium_QInv = computeDilithiumRedConstant()
+		r.Dilithium_QInv = computeDilithiumRedConstant()
 	case Generic:
 		// TODO: Apply generic modular reductions comparing modulus Q to apply Barrett or Montgomery.
+		r.montConstants = computeMontgomeryConstants(q)
+		r.barrettConstant = computeBarrettRedConstant(q)
 	}
-	return montRed
+	return r
 }

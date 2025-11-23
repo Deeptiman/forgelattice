@@ -1,6 +1,7 @@
 package modred
 
 const (
+	// Dilithium modulus
 	Dilithium_Q = 8380417
 )
 
@@ -24,9 +25,9 @@ func modInverse32(q uint32) uint32 {
 	return uint32(t0)
 }
 
-func (r *ModRed) MontgomeryMulWithDilithium(a, b uint32) uint32 {
+func (m *ModRed) MontgomeryMulWithDilithium(a, b uint32) uint32 {
 	t := uint64(a) * uint64(b)                                    // maximum upto 64-bits
-	mu := uint64(uint32(uint32(t)*r.Dilithium_QInv) & 0xffffffff) // mu = (t * qInv) & (2³² - 1)
+	mu := uint64(uint32(uint32(t)*m.Dilithium_QInv) & 0xffffffff) // mu = (t * qInv) & (2³² - 1)
 	u := (t + mu*Dilithium_Q) >> 32
 	u32 := uint32(u)
 	if u32 >= uint32(Dilithium_Q) {

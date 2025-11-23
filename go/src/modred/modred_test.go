@@ -14,7 +14,7 @@ func TestModRed_computeDilithiumRedConstant(t *testing.T) {
 }
 
 func TestModRed_MontgomeryEncodeWithDilithium(t *testing.T) {
-	r := &ModRed{Dilithium_QInv: computeDilithiumRedConstant()}
+	r := Dilithium.ToModRed(Dilithium_Q)
 	oneEnc := uint32((1 << 32) % uint64(Dilithium_Q))
 	assert.Equal(t, uint32(4193792), oneEnc)
 	assert.Equal(t, r.MontgomeryMulWithDilithium(oneEnc, oneEnc), oneEnc)
@@ -26,7 +26,7 @@ func TestModRed_MontgomeryEncodeWithDilithium(t *testing.T) {
 }
 
 func TestModRed_MontgomeryMulWithDilithium(t *testing.T) {
-	r := &ModRed{Dilithium_QInv: computeDilithiumRedConstant()}
+	r := Dilithium.ToModRed(Dilithium_Q)
 	Q := big.NewInt(int64(Dilithium_Q))
 
 	for i := 0; i < 2000; i++ {
@@ -142,5 +142,80 @@ func TestModRed_KyberBarrettRandomSigned(t *testing.T) {
 		r := &ModRed{}
 		red := r.KyberBarrettReductionWith16Bit(x)
 		assert.Equal(t, int32(red), canonicalModQSigned(x))
+	}
+}
+
+func TestModRed_KyberBarrettReduceFull(t *testing.T) {
+	Q := Kyber_Q
+	r := &ModRed{}
+	for x := -1 << 15; x <= 1<<15; x++ {
+		y1 := int32(r.KyberBarrettReductionWith16Bit(int32(x)))
+		y2 := int32(x) % int32(Q)
+		if y2 < 0 {
+			y2 += int32(Q)
+		}
+		if y1 != y2 {
+			t.Fatalf("%d %d %d", x, y1, y2) // Fail at: y1 = -3329, y2 = 3329
+		}
+	}
+}
+
+func modQ32(x int32) int16 {
+	y := x % int32(Kyber_Q)
+	if y < 0 {
+		y += int32(Kyber_Q)
+	}
+	return int16(y)
+}
+
+func TestModRed_KyberToMontgomeryFull(t *testing.T) {
+	for x := -(1 << 15); x < 1<<15; x++ {
+		r := &ModRed{}
+		y := r.ToMontgomeryWithKyber(int32(x))
+		y1 := modQ32(int32(y))
+		y2 := modQ32(int32(x * 2285))
+		if y1 != y2 {
+			t.Fatalf("%d:%d:%d", x, y1, y2)
+		}
+	}
+}
+
+func TestModRed_KyberMontgomeryEncodeDecode(t *testing.T) {
+	r := &ModRed{}
+	for x := -(1 << 15); x <= (1 << 15); x++ {
+		// 1) Encode: x --> xR mod Q
+		enc := r.MontgomeryMulWithKyber(int32(x), int32(R2modQ))
+
+		// 2) Decode: (xR) * R⁻¹ ≡ x mod Q
+		dec := r.MontgomeryMulWithKyber(int32(enc), 1)
+
+		red := modQ32(int32(x))
+		assert.Equal(t, dec, red)
+	}
+}
+
+func TestModRed_BarrettReduceWith32bitRandom(t *testing.T) {
+	rng := mRand.New(mRand.NewSource(1337))
+	q := uint64(12289)
+	m := Generic.ToModRed(q)
+
+	for i := 0; i < 50000; i++ {
+		x := rng.Uint32()
+		red := m.BarrettReduceWith32bit(uint64(x))
+		exp := uint64(x) % q
+		assert.Equal(t, exp, red)
+	}
+}
+
+func TestModRed_BarrettReduceWith64bitRandom(t *testing.T) {
+	rng := mRand.New(mRand.NewSource(1337))
+	q := uint64(12289)
+	m := Generic.ToModRed(q)
+
+	for i := 0; i < 50000; i++ {
+		x := rng.Uint64()
+		red := m.BarrettReduceWith64bit(x)
+		exp := x % q
+		assert.Equal(t, exp, red)
 	}
 }
