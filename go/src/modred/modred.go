@@ -30,8 +30,8 @@ type barrettConstant struct {
 }
 
 type montgomeryConstants struct {
-	qInv uint64
-	r2   uint64
+	qInv uint64 // qInv = -q^{-1} mod 2^64
+	r2   uint64 // R^2 mod q
 }
 
 func computeMu64(q uint64) uint64 {
@@ -52,9 +52,16 @@ func computeBarrettRedConstant(q uint64) barrettConstant {
 //	---> r2 = R² mod q
 func computeMontgomeryConstants(q uint64) montgomeryConstants {
 	qBig := new(big.Int).SetUint64(q)
-	qInv := new(big.Int).ModInverse(qBig, R) // qInv = q⁻¹ mod 2⁶⁴
-	R2.Mod(R2, qBig)
-	return montgomeryConstants{qInv.Uint64(), R2.Uint64()}
+
+	// qInv = -q⁻¹ mod 2⁶⁴
+	qInv := new(big.Int).ModInverse(qBig, R)
+	qInv.Neg(qInv).Mod(qInv, R)
+
+	// r2 = R² mod q
+	R2Big := new(big.Int).Mul(R, R)
+	R2Big.Mod(R2Big, qBig)
+	r2 := R2Big.Uint64()
+	return montgomeryConstants{qInv.Uint64(), r2}
 }
 
 func (a Algorithm) ToModRed(q uint64) *ModRed {

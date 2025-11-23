@@ -2,6 +2,7 @@ package modred
 
 import (
 	"crypto/rand"
+	"github.com/Deeptiman/ntt-hardware-accelerator/go/src/utils"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	mRand "math/rand"
@@ -217,5 +218,43 @@ func TestModRed_BarrettReduceWith64bitRandom(t *testing.T) {
 		red := m.BarrettReduceWith64bit(x)
 		exp := x % q
 		assert.Equal(t, exp, red)
+	}
+}
+
+func TestModRed_HE_EncodeDecode(t *testing.T) {
+
+	q := uint64(HE_Q)
+	r := Generic.ToModRed(q)
+
+	for i := 0; i < 10000; i++ {
+		x := utils.SecureRNG().Uint64() % q
+
+		enc := r.ToMontgomery(x)
+		dec := r.FromMontgomery(enc)
+
+		expected := x % q
+		assert.Equal(t, expected, dec)
+	}
+}
+
+func mulModQ(a, b uint64) uint64 {
+	z := new(big.Int).Mul(new(big.Int).SetUint64(a), new(big.Int).SetUint64(b))
+	z.Mod(z, new(big.Int).SetUint64(HE_Q))
+	return z.Uint64()
+}
+
+func TestModRed_MontgomeryMul(t *testing.T) {
+	r := Generic.ToModRed(HE_Q)
+
+	for i := 0; i < 10000; i++ {
+		a := utils.SecureRNG().Uint64() % HE_Q
+		b := utils.SecureRNG().Uint64() % HE_Q
+
+		aM := r.ToMontgomery(a)
+		bM := r.ToMontgomery(b)
+		prodM := r.MontgomeryMul(aM, bM)
+		prod := r.FromMontgomery(prodM)
+
+		assert.Equal(t, mulModQ(a, b), prod)
 	}
 }
