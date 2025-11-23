@@ -2,7 +2,7 @@ package prime
 
 import (
 	"crypto/rand"
-	"github.com/Deeptiman/ntt-hardware-accelerator/go/src/utils"
+	"github.com/Deeptiman/forgekey/go/src/utils"
 	"math/big"
 )
 

@@ -1,7 +1,7 @@
 package transformer
 
 import (
-	"github.com/Deeptiman/ntt-hardware-accelerator/go/src/prime"
+	"github.com/Deeptiman/forgekey/go/src/prime"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
