@@ -2,7 +2,7 @@ package prime
 
 import (
 	"fmt"
-	"github.com/Deeptiman/ntt-hardware-accelerator/go/src/utils"
+	"github.com/Deeptiman/forgekey/go/src/utils"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"math/rand"

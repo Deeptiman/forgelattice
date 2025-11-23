@@ -2,17 +2,13 @@ package modred
 
 import "math/bits"
 
-const (
-	HE_Q = 0x0FFFFFFFFFFFFFFB // < 2^60 (homomorphic ~60-bit modulus)
-)
-
 func (m *ModRed) BarrettReduceWith32bit(x uint64) uint64 {
 	hi, lo := bits.Mul64(x, m.barrettConstant.mu32)
 	t := hi<<32 | lo>>32
 
-	r := x - t*m.Q
-	if r >= m.Q {
-		r -= m.Q
+	r := x - t*m.HomomorphicQ
+	if r >= m.HomomorphicQ {
+		r -= m.HomomorphicQ
 	}
 	return r
 }
@@ -24,12 +20,12 @@ func (m *ModRed) BarrettReduceWith64bit(x uint64) uint64 {
 	t := hi // hi is exactly floor(x*Mu64 / 2⁶⁴)
 
 	// 2) r = x - t*Q
-	r := x - t*m.Q
+	r := x - t*m.HomomorphicQ
 
 	// 3) r is now in [0, 2q) (for typical HE standard modulus range)
 	// so at most two subtractions normalize into [0, q).
-	for r >= m.Q {
-		r -= m.Q
+	for r >= m.HomomorphicQ {
+		r -= m.HomomorphicQ
 	}
 	return r
 }
@@ -51,7 +47,7 @@ func (m *ModRed) MontgomeryMul(a, b uint64) uint64 {
 	m0 := lowBits * m.montConstants.qInv
 
 	// Extract high bits from m * q
-	mHigh, mLo := bits.Mul64(m0, m.Q)
+	mHigh, mLo := bits.Mul64(m0, m.HomomorphicQ)
 
 	// add low parts, capture carry
 	_, carry := bits.Add64(lowBits, mLo, 0)
@@ -62,15 +58,15 @@ func (m *ModRed) MontgomeryMul(a, b uint64) uint64 {
 	u := sumHi
 
 	// Check if overflow occurs with the addition above the given modulo Q.
-	if u >= m.Q {
-		u -= m.Q
+	if u >= m.HomomorphicQ {
+		u -= m.HomomorphicQ
 	}
 	return u
 }
 
 // ToMontgomery ...
 func (m *ModRed) ToMontgomery(x uint64) uint64 {
-	return m.MontgomeryMul(x%HE_Q, m.montConstants.r2)
+	return m.MontgomeryMul(x%m.HomomorphicQ, m.montConstants.r2)
 }
 
 // FromMontgomery ...

@@ -1,4 +1,4 @@
-module github.com/Deeptiman/ntt-hardware-accelerator/go/src
+module github.com/Deeptiman/forgekey/go/src
 
 go 1.24.3
 

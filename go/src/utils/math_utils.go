@@ -7,6 +7,20 @@ import (
 	mRand "math/rand"
 )
 
+func ModInverse32(q uint32) uint32 {
+	var t0, t1 int64 = 0, 1
+	var r0, r1 int64 = 1 << 32, int64(q)
+	for r1 != 0 {
+		q1 := r0 / r1
+		r0, r1 = r1, r0-q1*r1
+		t0, t1 = t1, t0-q1*t1
+	}
+	if t0 < 0 {
+		t0 += 1 << 32
+	}
+	return uint32(t0)
+}
+
 func ModMul(a, b, mod int64) int64 {
 	res := a * b % mod
 	if res < 0 {
