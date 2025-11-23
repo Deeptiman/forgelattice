@@ -1,8 +1,7 @@
 package modred
 
 const (
-	Dilithium_Q        = 8380417
-	Dilithium_R uint64 = 1 << 32
+	Dilithium_Q = 8380417
 )
 
 func computeDilithiumRedConstant() uint32 {

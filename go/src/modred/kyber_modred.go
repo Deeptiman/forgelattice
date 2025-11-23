@@ -1,9 +1,18 @@
 package modred
 
 const (
-	Kyber_Q    = 3329
+	Kyber_Q = 3329
+
+	// Montgomery constants
 	Kyber_QInv = int32(62209) // qInv = q⁻¹ mod 2¹⁶
 	R2modQ     = int32(1353)  // R² mod Q
+
+	// Barrett constants
+	// mu26 = floor(2²⁶ / Kyber_Q) = 20158.86
+	// 20159 candidate selected as floor candidate because it fits perfectly with the computation.
+	barrettK16Mu = 20159
+	// mu32 = floor(2³² / q)
+	barrettK32Mu = (uint64(1) << 32) / Kyber_Q
 )
 
 // MontgomeryMulWithKyber ...
@@ -44,4 +53,20 @@ func (r *ModRed) MontgomeryMulWithKyber(a, b int32) int16 {
 func (r *ModRed) ToMontgomeryWithKyber(x int32) int16 {
 	// R² mod q = 1353 for Kyber.
 	return r.MontgomeryMulWithKyber(x, int32(R2modQ))
+}
+
+// KyberBarrettReductionWith16Bit ...
+//
+// Source: CIRCL repo computes Kyber barrett reduction with 16-bits register.
+func (r *ModRed) KyberBarrettReductionWith16Bit(x int32) int16 {
+	// t = floor( (x * mu16) / 2¹⁶)
+	t := int16((x * barrettK16Mu) >> 26)
+	m := int16(x) - t*Kyber_Q
+	if m < 0 {
+		m += Kyber_Q
+	}
+	if m >= Kyber_Q {
+		m -= Kyber_Q
+	}
+	return m
 }
