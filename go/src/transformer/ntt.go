@@ -1,6 +1,8 @@
 package transformer
 
 import (
+	"github.com/Deeptiman/ntt-hardware-accelerator/go/src/utils"
+	"math/big"
 	"math/bits"
 )
 
@@ -19,6 +21,8 @@ type NTTTable struct {
 	N int
 	// Q is the prime modulus for NTT domain (Q ≡ 1 mod 2N).
 	Q int64
+	// Order is the maximum width of the multiplicative cycle that twiddle-factor lies on.
+	Order int64
 	// PrimitiveRoot is a primitive N-th root of unity modulo Q (wˆN ≡ 1, order = N).
 	PrimitiveRoot int64
 	// Twiddles contains precomputed twiddle factors for each stage:
@@ -33,9 +37,9 @@ type NTTTable struct {
 // isPrimitiveRoot is the internal method which performs the (Q-1)/gcd(N, Q-1) for each factor to find the multiplicative
 // order.
 func (n *NTTTable) isPrimitiveRoot(g, q int64, factors []int64) bool {
-	phi := q - 1
 	for _, f := range factors {
-		if n.modPow(g, phi/f, q) == 1 {
+		exp := int64(n.Order / f)
+		if utils.ModPow(g, exp, q) == 1 {
 			return false
 		}
 	}
@@ -49,11 +53,20 @@ func (n *NTTTable) FindPrimitiveRoots(factors []uint64) int64 {
 	if len(factors) == 0 {
 		return -1
 	}
-	for g := int64(2); g <= 1000; g++ {
-		if n.isPrimitiveRoot(g, n.Q, toInt64(factors)) {
+	Q := big.NewInt(n.Q)
+	limit := new(big.Int).Sub(Q, big.NewInt(1))
+	for g := int64(2); ; g++ {
+		if big.NewInt(g).Cmp(limit) >= 0 {
+			break
+		}
+		// test g^order % q == 1
+		pow := utils.ModPow(g, n.Order, Q.Int64())
+		if big.NewInt(pow).Cmp(big.NewInt(1)) != 0 {
+			continue
+		}
+		if n.isPrimitiveRoot(g, Q.Int64(), utils.ToInt64(factors)) {
 			return g
 		}
-		g++
 	}
 	return -1
 }
@@ -112,9 +125,9 @@ func (n *NTTTable) NTT(coeffs []int64) []int64 {
 				u := coeffsInput[i+j]
 				v := coeffsInput[i+j+subProblems/2]
 				// U + V mod Q
-				coeffsInput[i+j] = n.modMul(u+v, 1, n.Q)
+				coeffsInput[i+j] = utils.ModMul(u+v, 1, n.Q)
 				// U - Wi * V mod Q
-				coeffsInput[i+j+subProblems/2] = n.modMul(u-n.modMul(wi, v, n.Q), 1, n.Q)
+				coeffsInput[i+j+subProblems/2] = utils.ModMul(u-utils.ModMul(wi, v, n.Q), 1, n.Q)
 			}
 		}
 		stage++
@@ -153,16 +166,16 @@ func (n *NTTTable) InverseNTTByDIF(coeffs []int64) []int64 {
 				wi := twiddles[stage][j]
 				u := coeffsInput[i+j]
 				v := coeffsInput[i+j+subProblems/2]
-				coeffsInput[i+j] = n.modMul(u+v, 1, n.Q)
-				coeffsInput[i+j+subProblems/2] = n.modMul(u-n.modMul(wi, v, n.Q), 1, n.Q)
+				coeffsInput[i+j] = utils.ModMul(u+v, 1, n.Q)
+				coeffsInput[i+j+subProblems/2] = utils.ModMul(u-utils.ModMul(wi, v, n.Q), 1, n.Q)
 			}
 		}
 		stage++
 	}
 	// Final scaling: multiply by N^(-1) mod Q
-	nInv := n.modPow(int64(n.N), n.Q-2, n.Q)
+	nInv := utils.ModPow(int64(n.N), n.Q-2, n.Q)
 	for i := 0; i < n.N; i++ {
-		coeffsInput[i] = n.modMul(coeffsInput[i], nInv, n.Q)
+		coeffsInput[i] = utils.ModMul(coeffsInput[i], nInv, n.Q)
 	}
 	return coeffsInput
 }
@@ -192,47 +205,18 @@ func (n *NTTTable) InverseNTTByDIT(coeffs []int64) []int64 {
 				u := coeffsInput[i+j]
 				v := coeffsInput[i+j+subProblems/2]
 				// U + V mod Q
-				coeffsInput[i+j] = n.modMul(u+v, 1, n.Q)
+				coeffsInput[i+j] = utils.ModMul(u+v, 1, n.Q)
 				// U - Wi * V mod Q
-				coeffsInput[i+j+subProblems/2] = n.modMul(u-n.modMul(wi, v, n.Q), 1, n.Q)
+				coeffsInput[i+j+subProblems/2] = utils.ModMul(u-utils.ModMul(wi, v, n.Q), 1, n.Q)
 			}
 		}
 		stage++
 	}
 
 	// Final scaling: multiply by Nˆ(-1) mod Q
-	nInv := n.modPow(int64(n.N), n.Q-2, n.Q)
+	nInv := utils.ModPow(int64(n.N), n.Q-2, n.Q)
 	for i := 0; i < n.N; i++ {
-		coeffsInput[i] = n.modMul(coeffsInput[i], nInv, n.Q)
+		coeffsInput[i] = utils.ModMul(coeffsInput[i], nInv, n.Q)
 	}
 	return coeffsInput
-}
-
-func (n *NTTTable) modMul(a, b, mod int64) int64 {
-	res := a * b % mod
-	if res < 0 {
-		res += mod
-	}
-	return res
-}
-
-func (n *NTTTable) modPow(base, exp, mod int64) int64 {
-	res := int64(1)
-	for exp > 0 { // binary exponentiation
-		// Check if last least significant bit is odd-bit.
-		if exp&1 == 1 {
-			res = n.modMul(res, base, mod)
-		}
-		base = n.modMul(base, base, mod)
-		exp >>= 1 // right to left shift to read through least significant bits.
-	}
-	return res
-}
-
-func toInt64(factors []uint64) []int64 {
-	factorInt64 := make([]int64, 0, len(factors))
-	for _, factor := range factors {
-		factorInt64 = append(factorInt64, int64(factor))
-	}
-	return factorInt64
 }
