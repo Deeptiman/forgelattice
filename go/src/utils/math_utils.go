@@ -1,6 +1,11 @@
 package utils
 
-import "math/big"
+import (
+	"crypto/rand"
+	"encoding/binary"
+	"math/big"
+	mRand "math/rand"
+)
 
 func ModMul(a, b, mod int64) int64 {
 	res := a * b % mod
@@ -37,4 +42,11 @@ func Abs(x *big.Int) *big.Int {
 		return new(big.Int).Neg(x)
 	}
 	return new(big.Int).Set(x)
+}
+
+func SecureRNG() *mRand.Rand {
+	var seedBytes [8]byte
+	_, _ = rand.Read(seedBytes[:])
+	seed := int64(binary.LittleEndian.Uint64(seedBytes[:]))
+	return mRand.New(mRand.NewSource(seed))
 }
