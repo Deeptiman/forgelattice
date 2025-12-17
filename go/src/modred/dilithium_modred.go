@@ -20,15 +20,3 @@ func (d DilithiumInt) MontgomeryMul(a, b int32) int32 {
 func (d DilithiumInt) ToMontgomeryWithDilithium(a, b int32) int32 {
 	return d.MontgomeryMul(a, b)
 }
-
-func (d DilithiumInt) BarrettRedWith16bit(_ int32) int32 {
-	return -1
-}
-
-func (d DilithiumInt) BarrettRedWith32bit(_ int32) int32 {
-	return -1
-}
-
-func (d DilithiumInt) BarrettRedWith64bit(_ int32) int32 {
-	return -1
-}
