@@ -15,45 +15,49 @@ func TestModRed_computeDilithiumRedConstant(t *testing.T) {
 }
 
 func TestModRed_MontgomeryEncodeWithDilithium(t *testing.T) {
-	r := NewModRed(0, Dilithium)
-	oneEnc := uint32((1 << 32) % uint64(r.DilithiumQ))
+	oneEnc := uint32((1 << 32) % uint64(DilithiumQ))
 	assert.Equal(t, uint32(4193792), oneEnc)
-	assert.Equal(t, r.MontgomeryMulWithDilithium(oneEnc, oneEnc), oneEnc)
+	var d DilithiumInt
+	m := NewModDirective[int32, int32, DilithiumInt](d)
+	assert.Equal(t, m.Red.MontgomeryMul(int32(oneEnc), int32(oneEnc)), int32(oneEnc))
 
-	qm1 := uint32(r.DilithiumQ - 1)
-	qm1Enc := uint32((uint64(qm1) * (1 << 32)) % r.DilithiumQ)
-	prod := r.MontgomeryMulWithDilithium(qm1Enc, qm1Enc)
-	assert.Equal(t, r.MontgomeryMulWithDilithium(prod, 1), uint32(1))
+	qm1 := uint32(DilithiumQ - 1)
+	qm1Enc := uint32((uint64(qm1) * (1 << 32)) % DilithiumQ)
+	prod := m.Red.MontgomeryMul(int32(qm1Enc), int32(qm1Enc))
+	assert.Equal(t, m.Red.MontgomeryMul(prod, 1), int32(1))
 }
 
 func TestModRed_MontgomeryMulWithDilithium(t *testing.T) {
-	r := NewModRed(0, Dilithium)
-	Q := big.NewInt(int64(r.DilithiumQ))
+	Q := big.NewInt(int64(DilithiumQ))
+	var d DilithiumInt
+	m := NewModDirective[int32, int32, DilithiumInt](d)
 
 	for i := 0; i < 2000; i++ {
-		ai, _ := rand.Int(rand.Reader, Q)
-		bi, _ := rand.Int(rand.Reader, Q)
+		ai, err := rand.Int(rand.Reader, Q)
+		assert.NoError(t, err)
+		bi, err := rand.Int(rand.Reader, Q)
+		assert.NoError(t, err)
 		// test values [a * b]
 		a := uint32(ai.Uint64())
 		b := uint32(bi.Uint64())
 
 		// Mont Encoding
-		am := uint32((uint64(a) * (1 << 32)) % r.DilithiumQ)
-		bm := uint32((uint64(b) * (1 << 32)) % r.DilithiumQ)
+		am := uint32((uint64(a) * (1 << 32)) % DilithiumQ)
+		bm := uint32((uint64(b) * (1 << 32)) % DilithiumQ)
 
 		// Montgomery mul should be equal to Encoding.
-		prod := r.MontgomeryMulWithDilithium(am, bm)
-		expected := uint32((uint64((uint64(a)*uint64(b))%r.DilithiumQ) * (1 << 32)) % r.DilithiumQ)
-		assert.Equal(t, expected, prod)
+		prod := m.Red.MontgomeryMul(int32(am), int32(bm))
+		expected := uint32((uint64((uint64(a)*uint64(b))%DilithiumQ) * (1 << 32)) % DilithiumQ)
+		assert.Equal(t, int32(expected), prod)
 
-		decoded := r.MontgomeryMulWithDilithium(prod, 1)
-		assert.Equal(t, uint32((uint64(a)*uint64(b))%r.DilithiumQ), decoded)
+		decoded := m.Red.MontgomeryMul(prod, 1)
+		assert.Equal(t, int32((uint64(a)*uint64(b))%DilithiumQ), decoded)
 
-		decodedA := r.MontgomeryMulWithDilithium(am, 1)
-		assert.Equal(t, a%uint32(r.DilithiumQ), decodedA)
+		decodedA := m.Red.MontgomeryMul(int32(am), 1)
+		assert.Equal(t, int32(a%uint32(DilithiumQ)), decodedA)
 
-		decodedB := r.MontgomeryMulWithDilithium(bm, 1)
-		assert.Equal(t, b%uint32(r.DilithiumQ), decodedB)
+		decodedB := m.Red.MontgomeryMul(int32(bm), 1)
+		assert.Equal(t, int32(b%uint32(DilithiumQ)), decodedB)
 	}
 }
 
@@ -62,36 +66,38 @@ func TestModRed_KyberMontgomeryConstant(t *testing.T) {
 	assert.Equal(t, RmodQ, uint32(2285))
 	assert.Equal(t, KyberR2modQ, int32(1353))
 
-	r := NewModRed(0, Kyber)
-	oneEnc := uint32((uint64(1) << 16) % uint64(r.KyberQ))
-	res := r.MontgomeryMulWithKyber(int32(oneEnc), int32(oneEnc))
+	var k KyberInt
+	m := NewModDirective[int32, int16, KyberInt](k)
+	oneEnc := uint32((uint64(1) << 16) % uint64(KyberQ))
+	res := m.Red.MontgomeryMul(int32(oneEnc), int32(oneEnc))
 	assert.Equal(t, int16(oneEnc), res)
 
-	qm1 := r.KyberQ - 1
-	qm1Enc := r.ToMontgomeryWithKyber(qm1)
-	prod := r.MontgomeryMulWithKyber(int32(qm1Enc), int32(qm1Enc))
-	decoded := r.MontgomeryMulWithKyber(int32(prod), 1)
+	qm1 := KyberQ - 1
+	qm1Enc := k.ToMontgomeryWithKyber(qm1)
+	prod := m.Red.MontgomeryMul(int32(qm1Enc), int32(qm1Enc))
+	decoded := m.Red.MontgomeryMul(int32(prod), 1)
 	assert.Equal(t, decoded, int16(1))
 }
 
 func TestModRed_MontgomeryMulWithKyber(t *testing.T) {
-	r := NewModRed(0, Kyber)
-	Q := big.NewInt(int64(r.KyberQ))
+	var k KyberInt
+	m := NewModDirective[int32, int16, KyberInt](k)
+	Q := big.NewInt(int64(KyberQ))
 	for i := 0; i < 2000; i++ {
 		ai, _ := rand.Int(rand.Reader, Q)
 		bi, _ := rand.Int(rand.Reader, Q)
 		a := int32(ai.Int64())
 		b := int32(bi.Int64())
 
-		am := r.ToMontgomeryWithKyber(a)
-		bm := r.ToMontgomeryWithKyber(b)
+		am := k.ToMontgomeryWithKyber(a)
+		bm := k.ToMontgomeryWithKyber(b)
 
-		prod := r.MontgomeryMulWithKyber(int32(am), int32(bm))
+		prod := m.Red.MontgomeryMul(int32(am), int32(bm))
 		ab := new(big.Int).Mul(ai, bi)
-		expectedEnc := uint32((ab.Uint64() * (uint64(1) << 16)) % uint64(r.KyberQ))
+		expectedEnc := uint32((ab.Uint64() * (uint64(1) << 16)) % uint64(KyberQ))
 		assert.Equal(t, uint32(prod), expectedEnc)
 
-		decoded := r.MontgomeryMulWithKyber(int32(prod), 1)
+		decoded := m.Red.MontgomeryMul(int32(prod), 1)
 		assert.Equal(t, int(decoded), int(new(big.Int).Mul(ai, bi).Mod(ab, Q).Int64()))
 	}
 }
@@ -116,11 +122,11 @@ func TestModRed_KyberBarretTestVector(t *testing.T) {
 		{-3329, 0, -2},
 		{-65536, 1044, -20},
 	}
+	var k KyberInt
 	for _, tc := range tests {
-		r := NewModRed(0, Kyber)
-		m := (tc.x * r.KyberBarrettK16Mu) >> 26
+		m := (tc.x * KyberBarrettK16Mu) >> 26
 		assert.Equal(t, m, tc.expT)
-		red := r.KyberBarrettReductionWith16Bit(tc.x)
+		red := k.BarrettRedWith16bit(tc.x)
 		assert.Equal(t, red, int16(tc.expected))
 	}
 }
@@ -138,22 +144,22 @@ func TestModRed_KyberBarrettRandomSigned(t *testing.T) {
 	seed := int64(42)
 	rng := mRand.New(mRand.NewSource(seed))
 
+	var k KyberInt
 	for i := 0; i < 50000; i++ {
-		r := NewModRed(0, Kyber)
 		x := rng.Int31n(1<<17) - int32(1<<16)
-		red := r.KyberBarrettReductionWith16Bit(x)
+		red := k.BarrettRedWith16bit(x)
 		assert.Equal(t, int32(red), canonicalModQSigned(x))
 	}
 }
 
 func TestModRed_KyberBarrettReduceFull(t *testing.T) {
 	Q := KyberQ
-	r := NewModRed(0, Kyber)
+	var k KyberInt
 	for x := -1 << 15; x <= 1<<15; x++ {
-		y1 := int32(r.KyberBarrettReductionWith16Bit(int32(x)))
-		y2 := int32(x) % int32(Q)
+		y1 := int32(k.BarrettRedWith16bit(int32(x)))
+		y2 := int32(x) % Q
 		if y2 < 0 {
-			y2 += int32(Q)
+			y2 += Q
 		}
 		if y1 != y2 {
 			t.Fatalf("%d %d %d", x, y1, y2) // Fail at: y1 = -3329, y2 = 3329
@@ -162,17 +168,17 @@ func TestModRed_KyberBarrettReduceFull(t *testing.T) {
 }
 
 func modQ32(x int32) int16 {
-	y := x % int32(KyberQ)
+	y := x % KyberQ
 	if y < 0 {
-		y += int32(KyberQ)
+		y += KyberQ
 	}
 	return int16(y)
 }
 
 func TestModRed_KyberToMontgomeryFull(t *testing.T) {
-	r := NewModRed(0, Kyber)
+	var k KyberInt
 	for x := -(1 << 15); x < 1<<15; x++ {
-		y := r.ToMontgomeryWithKyber(int32(x))
+		y := k.ToMontgomeryWithKyber(int32(x))
 		y1 := modQ32(int32(y))
 		y2 := modQ32(int32(x * 2285))
 		if y1 != y2 {
@@ -182,13 +188,14 @@ func TestModRed_KyberToMontgomeryFull(t *testing.T) {
 }
 
 func TestModRed_KyberMontgomeryEncodeDecode(t *testing.T) {
-	r := NewModRed(0, Kyber)
+	var k KyberInt
+	m := NewModDirective[int32, int16, KyberInt](k)
 	for x := -(1 << 15); x <= (1 << 15); x++ {
 		// 1) Encode: x --> xR mod Q
-		enc := r.MontgomeryMulWithKyber(int32(x), KyberR2modQ)
+		enc := m.Red.MontgomeryMul(int32(x), KyberR2modQ)
 
 		// 2) Decode: (xR) * R⁻¹ ≡ x mod Q
-		dec := r.MontgomeryMulWithKyber(int32(enc), 1)
+		dec := m.Red.MontgomeryMul(int32(enc), 1)
 
 		red := modQ32(int32(x))
 		assert.Equal(t, dec, red)
@@ -198,11 +205,12 @@ func TestModRed_KyberMontgomeryEncodeDecode(t *testing.T) {
 func TestModRed_BarrettReduceWith32bitRandom(t *testing.T) {
 	rng := mRand.New(mRand.NewSource(1337))
 	q := uint64(12289)
-	m := NewModRed(q, Homomorphic)
+	he := HEInt{Q: q, montConstants: computeMontgomeryConstants(q), barrettConstant: computeBarrettRedConstant(q)}
+	m := NewModDirective[uint64, uint64, HEInt](he)
 
 	for i := 0; i < 50000; i++ {
 		x := rng.Uint32()
-		red := m.BarrettReduceWith32bit(uint64(x))
+		red := m.Red.BarrettRedWith32bit(uint64(x))
 		exp := uint64(x) % q
 		assert.Equal(t, exp, red)
 	}
@@ -211,11 +219,12 @@ func TestModRed_BarrettReduceWith32bitRandom(t *testing.T) {
 func TestModRed_BarrettReduceWith64bitRandom(t *testing.T) {
 	rng := mRand.New(mRand.NewSource(1337))
 	q := uint64(12289)
-	m := NewModRed(q, Homomorphic)
+	he := HEInt{Q: q, montConstants: computeMontgomeryConstants(q), barrettConstant: computeBarrettRedConstant(q)}
+	m := NewModDirective[uint64, uint64, HEInt](he)
 
 	for i := 0; i < 50000; i++ {
 		x := rng.Uint64()
-		red := m.BarrettReduceWith64bit(x)
+		red := m.Red.BarrettRedWith64bit(x)
 		exp := x % q
 		assert.Equal(t, exp, red)
 	}
@@ -223,13 +232,14 @@ func TestModRed_BarrettReduceWith64bitRandom(t *testing.T) {
 
 func TestModRed_HE_EncodeDecode(t *testing.T) {
 	q := HEQ
-	r := NewModRed(q, Homomorphic)
+	he := HEInt{Q: q, montConstants: computeMontgomeryConstants(q), barrettConstant: computeBarrettRedConstant(q)}
+	m := NewModDirective[uint64, uint64, HEInt](he)
 
 	for i := 0; i < 10000; i++ {
 		x := utils.SecureRNG().Uint64() % q
 
-		enc := r.ToMontgomery(x)
-		dec := r.FromMontgomery(enc)
+		enc := m.Red.ToMontgomery(x)
+		dec := m.Red.FromMontgomery(enc)
 
 		expected := x % q
 		assert.Equal(t, expected, dec)
@@ -244,16 +254,17 @@ func mulModQ(a, b uint64) uint64 {
 
 func TestModRed_MontgomeryMul(t *testing.T) {
 	q := HEQ
-	r := NewModRed(q, Homomorphic)
+	he := HEInt{Q: q, montConstants: computeMontgomeryConstants(q), barrettConstant: computeBarrettRedConstant(q)}
+	m := NewModDirective[uint64, uint64, HEInt](he)
 
 	for i := 0; i < 10000; i++ {
 		a := utils.SecureRNG().Uint64() % q
 		b := utils.SecureRNG().Uint64() % q
 
-		aM := r.ToMontgomery(a)
-		bM := r.ToMontgomery(b)
-		prodM := r.MontgomeryMul(aM, bM)
-		prod := r.FromMontgomery(prodM)
+		aM := m.Red.ToMontgomery(a)
+		bM := m.Red.ToMontgomery(b)
+		prodM := m.Red.MontgomeryMul(aM, bM)
+		prod := m.Red.FromMontgomery(prodM)
 
 		assert.Equal(t, mulModQ(a, b), prod)
 	}
