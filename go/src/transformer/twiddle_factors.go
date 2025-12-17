@@ -6,7 +6,7 @@ import (
 )
 
 // PrecomputeTwiddleFactor pre-calculates the magic-multipliers (twiddle factors) for the NTT.
-func (n *NTTTable) PrecomputeTwiddleFactor() [][]int64 {
+func (n *NTTTable[T]) PrecomputeTwiddleFactor() [][]int64 {
 	// problemSize computes log₂(N), the number of NTT stages (sub-problems), computed with bits.TrailingZeros
 	// for any power of 2 N.
 	//
@@ -44,10 +44,14 @@ func (n *NTTTable) PrecomputeTwiddleFactor() [][]int64 {
 	return twiddles
 }
 
+func (n *NTTTable[T]) ModMul(a, b T) {
+	// TODO: How to continue from here to do mod mul based on the bits
+}
+
 // PrecomputeTwiddleFactorsByDIF precomputes all twiddle factors required for the DIF (inverse) NTT.
 // This eliminates expensive modular exponentiation at runtime and enables constant-time access via read-only
 // BRAM, achieving high-throughput pipelined NTT computation on FPGA.
-func (n *NTTTable) PrecomputeTwiddleFactorsByDIF() [][]int64 {
+func (n *NTTTable[T]) PrecomputeTwiddleFactorsByDIF() [][]int64 {
 	// problemSize computes log₂(N), the number of NTT stages (sub-problems), computed with bits.TrailingZeros
 	// for any power of 2 N.
 	//
@@ -81,7 +85,7 @@ func (n *NTTTable) PrecomputeTwiddleFactorsByDIF() [][]int64 {
 // - For each stage, computes wˆ(-(N/m)*j) where m = 2ˆ(stage + 1).
 // - Used by both DIT and DIF inverse NTT.
 // - Stored in BRAM for constant-time access on FPGA.
-func (n *NTTTable) PrecomputeInverseTwiddleFactors() [][]int64 {
+func (n *NTTTable[T]) PrecomputeInverseTwiddleFactors() [][]int64 {
 	problemSize := bits.TrailingZeros(uint(n.N))
 	twiddles := make([][]int64, problemSize)
 	stage := 0

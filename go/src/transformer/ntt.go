@@ -2,6 +2,7 @@ package transformer
 
 import (
 	"github.com/Deeptiman/forgekey/go/src/utils"
+	"github.com/Deeptiman/forgekey/go/src/word"
 	"math/big"
 	"math/bits"
 )
@@ -16,7 +17,7 @@ const (
 // NTTTable holds the precomputed parameters and twiddle factors for efficient computation of a Radix-2 NTT.
 // It supports both forward (DIT) and inverse (DIF) transform on power-of-2 polynomials modulo Q, as required
 // by lattice-based PQC algorithms (Kyber, Dilithium) and homomorphic encryption.
-type NTTTable struct {
+type NTTTable[T word.Bits] struct {
 	// N is the polynomial degree (number of coefficients), must be a power of 2.
 	N int
 	// Q is the prime modulus for NTT domain (Q ≡ 1 mod 2N).
@@ -31,12 +32,12 @@ type NTTTable struct {
 	//  - Forward (DIT): wˆ((N/m)*j)
 	//	- Inverse (DIF): wˆ(-(N/m)*j)
 	// where m = 2^(stage+1) is the group size.
-	Twiddles [][]int64
+	Twiddles [][]T
 }
 
 // isPrimitiveRoot is the internal method which performs the (Q-1)/gcd(N, Q-1) for each factor to find the multiplicative
 // order.
-func (n *NTTTable) isPrimitiveRoot(g, q int64, factors []int64) bool {
+func (n *NTTTable[T]) isPrimitiveRoot(g, q int64, factors []int64) bool {
 	for _, f := range factors {
 		exp := int64(n.Order / f)
 		if utils.ModPow(g, exp, q) == 1 {
@@ -49,7 +50,7 @@ func (n *NTTTable) isPrimitiveRoot(g, q int64, factors []int64) bool {
 // FindPrimitiveRoots discovers all primitive N-th roots of unity modulo Q. It iterates over candidates in [2, Q) and
 // tests each using the Extended Euclidean Algorithm to verify that it generates the full multiplicative order
 // (Q-1)/gcd(N, Q-1) and in returns the count of valid primitive roots.
-func (n *NTTTable) FindPrimitiveRoots(factors []uint64) int64 {
+func (n *NTTTable[T]) FindPrimitiveRoots(factors []uint64) int64 {
 	if len(factors) == 0 {
 		return -1
 	}
@@ -88,7 +89,7 @@ func (n *NTTTable) FindPrimitiveRoots(factors []uint64) int64 {
 //   - RN: Reversed input ----> Natural output (in-place, no bit-reversal)
 //
 // PQC (Kyber, Dilithium) typically uses NR → RN → NN for optimal in-place computation.
-func (n *NTTTable) BitReverse(coeffs []int64) []int64 {
+func (n *NTTTable[T]) BitReverse(coeffs []int64) []int64 {
 	result := make([]int64, n.N)
 	problemSize := bits.TrailingZeros(uint(n.N))
 	for i := 0; i < n.N; i++ {
@@ -113,7 +114,7 @@ func (n *NTTTable) BitReverse(coeffs []int64) []int64 {
 // k-th Nth root of unity.
 //
 // Forward NTT: A[k] = a[k] * w(iˆk) mod Q, where w is the primitive N-th root of unity.
-func (n *NTTTable) NTT(coeffs []int64) []int64 {
+func (n *NTTTable[T]) NTT(coeffs []int64) []int64 {
 	stage := 0
 	coeffsInput := make([]int64, n.N)
 	copy(coeffsInput, coeffs)
@@ -143,7 +144,7 @@ func (n *NTTTable) NTT(coeffs []int64) []int64 {
 // # After Inverse NTT
 //
 // a[i] = (1/N) * Σ A[k] * ω^(-i*k)  // Back to original coefficients
-func (n *NTTTable) INTT(coeffs []int64, d Decimation) []int64 {
+func (n *NTTTable[T]) INTT(coeffs []int64, d Decimation) []int64 {
 	switch d {
 	case Time:
 		return n.InverseNTTByDIT(coeffs)
@@ -155,7 +156,7 @@ func (n *NTTTable) INTT(coeffs []int64, d Decimation) []int64 {
 
 // InverseNTTByDIF computes the inverse transformation in frequency domain. The inverse process do not need any
 // bit-reversal and optimal for FPGA.
-func (n *NTTTable) InverseNTTByDIF(coeffs []int64) []int64 {
+func (n *NTTTable[T]) InverseNTTByDIF(coeffs []int64) []int64 {
 	twiddles := n.PrecomputeTwiddleFactorsByDIF()
 	coeffsInput := make([]int64, n.N)
 	copy(coeffsInput, coeffs)
@@ -189,7 +190,7 @@ func (n *NTTTable) InverseNTTByDIF(coeffs []int64) []int64 {
 // - Requires bit-reversal after to get natural order (NN)
 //
 // Note: DIF INTT is preferred for streaming (NN → NN, no bit-rev).
-func (n *NTTTable) InverseNTTByDIT(coeffs []int64) []int64 {
+func (n *NTTTable[T]) InverseNTTByDIT(coeffs []int64) []int64 {
 	coeffsInput := make([]int64, n.N)
 	copy(coeffsInput, coeffs)
 
