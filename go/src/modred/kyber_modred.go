@@ -55,11 +55,3 @@ func (k KyberInt) BarrettRedWith16bit(x int32) int16 {
 	}
 	return r
 }
-
-func (k KyberInt) BarrettRedWith32bit(_ int32) int16 {
-	return -1
-}
-
-func (k KyberInt) BarrettRedWith64bit(_ int32) int16 {
-	return -1
-}

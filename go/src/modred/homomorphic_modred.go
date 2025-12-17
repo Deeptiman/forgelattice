@@ -2,10 +2,6 @@ package modred
 
 import "math/bits"
 
-func (h HEInt) BarrettRedWith16bit(x uint64) uint64 {
-	return x
-}
-
 func (h HEInt) BarrettRedWith32bit(x uint64) uint64 {
 	hi, lo := bits.Mul64(x, h.barrettConstant.mu32)
 	t := hi<<32 | lo>>32

@@ -1,11 +1,7 @@
 package modred
 
 type Reduction[T any, X any] interface {
-	KyberInt | DilithiumInt | HEInt
 	MontgomeryMul(a, b T) X
-	BarrettRedWith16bit(x T) X
-	BarrettRedWith32bit(x T) X
-	BarrettRedWith64bit(x T) X
 }
 
 type (
