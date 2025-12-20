@@ -1,6 +1,32 @@
-package modred
+package homomorphic
 
-import "math/bits"
+import (
+	"math/big"
+	"math/bits"
+)
+
+var (
+	// HEQ ...
+	HEQ uint64 = 0x0FFFFFFFFFFFFFFB // < 2^60 (homomorphic ~60-bit modulus)
+)
+
+type HEInt struct {
+	Q    uint64
+	QInv uint64
+
+	montConstants   montgomeryConstants
+	barrettConstant barrettConstant
+}
+
+type barrettConstant struct {
+	mu32 uint64
+	mu64 uint64
+}
+
+type montgomeryConstants struct {
+	qInv uint64 // qInv = -q^{-1} mod 2^64
+	r2   uint64 // R^2 mod q
+}
 
 func (h HEInt) BarrettRedWith32bit(x uint64) uint64 {
 	hi, lo := bits.Mul64(x, h.barrettConstant.mu32)
@@ -16,11 +42,10 @@ func (h HEInt) BarrettRedWith32bit(x uint64) uint64 {
 func (h HEInt) BarrettRedWith64bit(x uint64) uint64 {
 	// 1) t = floor(x * Mu64 / 2⁶⁴)
 	// Mul64 returns 128-bit product: hi:lo = x * Mu
-	hi, _ := bits.Mul64(x, h.barrettConstant.mu64)
-	t := hi // hi is exactly floor(x*Mu64 / 2⁶⁴)
+	hi, _ := bits.Mul64(x, h.barrettConstant.mu64) // hi is exactly floor(x*Mu64 / 2⁶⁴)
 
-	// 2) r = x - t*Q
-	r := x - t*h.Q
+	// 2) r = x - hi*Q
+	r := x - hi*h.Q
 
 	// 3) r is now in [0, 2q) (for typical HE standard modulus range)
 	// so at most two subtractions normalize into [0, q).
@@ -72,4 +97,39 @@ func (h HEInt) ToMontgomery(x uint64) uint64 {
 // FromMontgomery ...
 func (h HEInt) FromMontgomery(x uint64) uint64 {
 	return h.MontgomeryMul(x, 1)
+}
+
+func barrettMu32(q uint64) uint64 {
+	return (uint64(1) << 32) / q
+}
+
+func barrettMu64(q uint64) uint64 {
+	maxBit := ^uint64(0) //2⁶⁴ - 1
+	return maxBit / q
+}
+
+func computeBarrettRedConstant(q uint64) barrettConstant {
+	return barrettConstant{mu32: barrettMu32(q), mu64: barrettMu64(q)}
+}
+
+// ComputeMontgomeryConstants
+//
+//	---> R = 2⁶⁴
+//
+//	---> qInv = (-q⁻¹) mod R where inverse is q⁻¹ mod R.
+//
+//	---> r2 = R² mod q
+func computeMontgomeryConstants(q uint64) montgomeryConstants {
+	qBig := new(big.Int).SetUint64(q)
+	R := new(big.Int).Lsh(big.NewInt(1), 64) // Maximum inflated modulus 2⁶⁴
+
+	// qInv = -q⁻¹ mod 2⁶⁴
+	qInv := new(big.Int).ModInverse(qBig, R)
+	qInv.Neg(qInv).Mod(qInv, R)
+
+	// r2 = R² mod q
+	R2Big := new(big.Int).Mul(R, R)
+	R2Big.Mod(R2Big, qBig)
+	r2 := R2Big.Uint64()
+	return montgomeryConstants{qInv.Uint64(), r2}
 }
