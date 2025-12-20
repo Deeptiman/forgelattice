@@ -1,6 +1,15 @@
 package kyber
 
-func ModMul(a, b, mod int16) int16 {
+func BitReverse(x int) int {
+	var r int
+	for i := 0; i < 7; i++ {
+		r = (r << 1) | (x & 1)
+		x >>= 1
+	}
+	return r
+}
+
+func ModMul(a, b, mod int) int {
 	res := a * b % mod
 	if res < 0 {
 		res += mod
@@ -8,8 +17,8 @@ func ModMul(a, b, mod int16) int16 {
 	return res
 }
 
-func ModPow(base, exp, mod int16) int16 {
-	res := int16(1)
+func ModPow(base, exp, mod int) int {
+	res := 1
 	for exp > 0 { // binary exponentiation
 		// Check if last least significant bit is odd-bit.
 		if exp&1 == 1 {
