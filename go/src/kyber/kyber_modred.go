@@ -2,16 +2,17 @@ package kyber
 
 var (
 	// Kyber modulus
-	KyberQ int32 = 3329
+	N       = 256
+	Q int32 = 3329
 
-	// KyberQInv Montgomery constants
-	KyberQInv   int32 = 62209 // qInv = q⁻¹ mod 2¹⁶
-	KyberR2modQ int32 = 1353  // R² mod Q
+	// QInv Montgomery constants
+	QInv   int32 = 62209 // qInv = q⁻¹ mod 2¹⁶
+	R2modQ int32 = 1353  // R² mod Q
 
 	// KyberBarrettK16Mu Barrett constants
 	// mu26 = floor(2²⁶ / Kyber_Q) = 20158.86
 	// 20159 candidate selected as floor candidate because it fits perfectly with the computation.
-	KyberBarrettK16Mu int32 = 20159
+	BarrettK16Mu int32 = 20159
 )
 
 // MontgomeryMul ...
@@ -31,8 +32,8 @@ func MontgomeryMul(a, b int32) int16 {
 	//	q' := 62209 = q⁻¹ mod R.
 	//
 	t := a * b // int32 bit is enough because |a|,|b| < 2ˆ15
-	// Multiply by KyberQInv in 64-bit and takes lower 32-bit
-	r := int32(int64(t) * int64(KyberQInv) & 0xffffffff)
+	// Multiply by QInv in 64-bit and takes lower 32-bit
+	r := int32(int64(t) * int64(QInv) & 0xffffffff)
 	// Extract the lower 16-bits of m, interpreted as a signed int16.
 	u := int16(r & 0xffff)
 	// Montgomery reduction step:
@@ -41,9 +42,9 @@ func MontgomeryMul(a, b int32) int16 {
 	//
 	// [xxxx xxxx xxxx xxxx] [LLLL LLLL LLLL LLLL]
 	// ^ upper 16 bits       ^ lower 16 bits (actual result)
-	t32 := (t - int32(u)*KyberQ) >> 16
+	t32 := (t - int32(u)*Q) >> 16
 	if t32 < 0 {
-		t32 += KyberQ // complement t32
+		t32 += Q // complement t32
 	}
 	return int16(t32) // discarding the upper 16-bits leading zeros (nlz).
 }
@@ -51,7 +52,7 @@ func MontgomeryMul(a, b int32) int16 {
 // ToMontgomeryWithKyber ...
 func ToMontgomeryWithKyber(x int32) int16 {
 	// R² mod q = 1353 for Kyber.
-	return MontgomeryMul(x, KyberR2modQ)
+	return MontgomeryMul(x, R2modQ)
 }
 
 // BarrettRedWith16bit ...
@@ -59,13 +60,13 @@ func ToMontgomeryWithKyber(x int32) int16 {
 // Source: CIRCL repo computes Kyber barrett reduction with 16-bits register.
 func BarrettRedWith16bit(x int32) int16 {
 	// t = floor( (x * mu16) / 2¹⁶)
-	t := int16((x * KyberBarrettK16Mu) >> 26)
-	r := int16(x) - t*int16(KyberQ)
+	t := int16((x * BarrettK16Mu) >> 26)
+	r := int16(x) - t*int16(Q)
 	if r < 0 {
-		r += int16(KyberQ)
+		r += int16(Q)
 	}
-	if r >= int16(KyberQ) {
-		r -= int16(KyberQ)
+	if r >= int16(Q) {
+		r -= int16(Q)
 	}
 	return r
 }

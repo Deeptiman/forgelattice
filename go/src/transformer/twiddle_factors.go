@@ -6,7 +6,7 @@ import (
 )
 
 // PrecomputeTwiddleFactor pre-calculates the magic-multipliers (twiddle factors) for the NTT.
-func (n *NTTTable[T]) PrecomputeTwiddleFactor() [][]int64 {
+func (n *NTTTable) PrecomputeTwiddleFactor() [][]int64 {
 	// problemSize computes log₂(N), the number of NTT stages (sub-problems), computed with bits.TrailingZeros
 	// for any power of 2 N.
 	//
