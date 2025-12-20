@@ -2,7 +2,6 @@ package prime
 
 import (
 	"crypto/rand"
-	"github.com/Deeptiman/forgekey/go/src/utils"
 	"math/big"
 )
 
@@ -53,7 +52,7 @@ func pollardRho(n *big.Int) *big.Int {
 			y.Mul(y, y).Add(y, c).Mod(y, n)
 			y.Mul(y, y).Add(y, c).Mod(y, n)
 
-			diff := utils.Abs(new(big.Int).Sub(x, y))
+			diff := Abs(new(big.Int).Sub(x, y))
 			d.GCD(nil, nil, diff, n) // gcd(|x-y|, n)
 		}
 

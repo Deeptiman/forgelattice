@@ -1,9 +1,23 @@
-package modred
+package kyber
+
+var (
+	// Kyber modulus
+	KyberQ int32 = 3329
+
+	// KyberQInv Montgomery constants
+	KyberQInv   int32 = 62209 // qInv = q⁻¹ mod 2¹⁶
+	KyberR2modQ int32 = 1353  // R² mod Q
+
+	// KyberBarrettK16Mu Barrett constants
+	// mu26 = floor(2²⁶ / Kyber_Q) = 20158.86
+	// 20159 candidate selected as floor candidate because it fits perfectly with the computation.
+	KyberBarrettK16Mu int32 = 20159
+)
 
 // MontgomeryMul ...
 //
 // Source: https://github.com/cloudflare/circl/blob/main/pke/kyber/internal/common/field.go#L4
-func (k KyberInt) MontgomeryMul(a, b int32) int16 {
+func MontgomeryMul(a, b int32) int16 {
 	// Why CIRCL uses 16-bit Montgomery for Kyber?
 	// - Kyber q = 3329 < 2¹², so its easily fits in a 16-bit word. Choosing R = 2¹⁶ is natural because its
 	// the next convenient machine word power-of-two that's large than 3329.
@@ -35,15 +49,15 @@ func (k KyberInt) MontgomeryMul(a, b int32) int16 {
 }
 
 // ToMontgomeryWithKyber ...
-func (k KyberInt) ToMontgomeryWithKyber(x int32) int16 {
+func ToMontgomeryWithKyber(x int32) int16 {
 	// R² mod q = 1353 for Kyber.
-	return k.MontgomeryMul(x, KyberR2modQ)
+	return MontgomeryMul(x, KyberR2modQ)
 }
 
 // BarrettRedWith16bit ...
 //
 // Source: CIRCL repo computes Kyber barrett reduction with 16-bits register.
-func (k KyberInt) BarrettRedWith16bit(x int32) int16 {
+func BarrettRedWith16bit(x int32) int16 {
 	// t = floor( (x * mu16) / 2¹⁶)
 	t := int16((x * KyberBarrettK16Mu) >> 26)
 	r := int16(x) - t*int16(KyberQ)

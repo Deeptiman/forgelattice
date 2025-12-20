@@ -44,10 +44,6 @@ func (n *NTTTable[T]) PrecomputeTwiddleFactor() [][]int64 {
 	return twiddles
 }
 
-func (n *NTTTable[T]) ModMul(a, b T) {
-	// TODO: How to continue from here to do mod mul based on the bits
-}
-
 // PrecomputeTwiddleFactorsByDIF precomputes all twiddle factors required for the DIF (inverse) NTT.
 // This eliminates expensive modular exponentiation at runtime and enables constant-time access via read-only
 // BRAM, achieving high-throughput pipelined NTT computation on FPGA.
