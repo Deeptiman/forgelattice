@@ -3,9 +3,13 @@ package sha3
 type Sponge int
 
 const (
-	Absorb Sponge = iota
-	Squeeze
+	Absorbing Sponge = iota
+	Squeezing
 	maxBit int = 168
+
+	dsbyteShake = 0x1f
+	rate128     = 168
+	rate256     = 136
 )
 
 type State struct {
@@ -17,24 +21,33 @@ type State struct {
 	spong       Sponge
 }
 
-func (s *State) Hash(data []byte) error {
+func NewShake128() State {
+	return State{rate: rate128, dsBytes: dsbyteShake, spong: Absorbing}
+}
+
+func NewShake256() State {
+	return State{rate: rate256, dsBytes: dsbyteShake, spong: Absorbing}
+}
+
+func (s *State) Write(data []byte) (written int, err error) {
 	var block []byte
+	written = len(data)
 	for len(data) > 0 {
 		block, data = s.absorbBytes(data)
 
+		copy(s.parcel[s.buffOffSets:], block)
 		s.buffOffSets += len(block)
-		copy(s.parcel[len(s.parcel):], block)
 
 		if s.buffOffSets == s.rate {
 			s.permute()
 		}
 	}
-	return nil
+	return written, nil
 }
 
 func (s *State) Read(out []byte) error {
-	if s.spong == Absorb {
-		s.padding()
+	if s.spong == Absorbing {
+		s.padAndPermute(s.dsBytes)
 	}
 	for len(out) > 0 {
 		n := copy(out, s.parcel[:s.buffOffSets])
@@ -57,25 +70,28 @@ func (s *State) buf() []byte {
 
 func (s *State) permute() {
 	switch s.spong {
-	case Absorb:
+	case Absorbing:
 		s.xorIn(s.buf())
 		s.buffOffSets = 0
 		KeccakF1600(&s.lanes)
-	case Squeeze:
+	case Squeezing:
 		KeccakF1600(&s.lanes)
 		s.buffOffSets = s.rate
 		s.copyOut(s.buf())
 	}
 }
 
-func (s *State) padding() {
-	s.parcel[s.buffOffSets-1] ^= 0x01
-	for i := s.buffOffSets; i < s.rate; i++ {
-		s.parcel[i] = 0
-	}
-	s.parcel[s.rate-1] = 0x1f
-	s.permute()
-	s.spong = Squeeze
+func (s *State) padAndPermute(dsbyte byte) {
+	padIndexes := s.buffOffSets + 1
 	s.buffOffSets = s.rate
-	s.copyOut(s.buf())
+	buf := s.buf()
+	buf[padIndexes-1] = dsbyte
+	for i := padIndexes; i < s.rate; i++ {
+		buf[i] = 0
+	}
+	buf[s.rate-1] ^= 0x80 // XORing the last-bit with 128
+	s.permute()
+	s.spong = Squeezing
+	s.buffOffSets = s.rate
+	s.copyOut(buf)
 }
