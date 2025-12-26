@@ -1,0 +1,171 @@
+package sha3
+
+import (
+	"compress/flate"
+	"encoding/hex"
+	"encoding/json"
+	"github.com/Deeptiman/forgekey/go/src/sha3/keccak"
+	"github.com/stretchr/testify/assert"
+	"math/rand"
+	"os"
+	"strings"
+	"testing"
+)
+
+const (
+	katFilename = "testdata/keccakKats.json.deflate"
+)
+
+func TestStateHash_WithSHAKE256(t *testing.T) {
+	k := []byte("this is a secret key; you should generate a strong random key that's at least 32 bytes long")
+	buf := []byte("and this is some data to authenticate")
+
+	s := NewShake256()
+	out := make([]byte, 32)
+	s.Write(k)
+	s.Write(buf)
+	s.Read(out)
+	assert.Equal(t, "78de2974bd2711d5549ffd32b753ef0f5fa80a0db2556db60f0987eb8a9218ff", hex.EncodeToString(out))
+}
+
+func TestStateHash_WithSHAKE128(t *testing.T) {
+	k := []byte("this is a secret key; you should generate a strong random key that's at least 32 bytes long")
+	buf := []byte("and this is some data to authenticate")
+
+	s := NewShake128()
+	out := make([]byte, 32)
+	s.Write(k)
+	s.Write(buf)
+	s.Read(out)
+	assert.Equal(t, "8cc1e412dac16d2497d10d8293351f8de537aaea0984b9f5bd0c3faaaf7d9fe5", hex.EncodeToString(out))
+}
+
+func TestShakeSum256(t *testing.T) {
+	buf := []byte("some data to hash")
+	// A hash needs to be 64 bytes long to have 256-bit collision resistance.
+	h := make([]byte, 64)
+	// Compute a 64-byte hash of buf and put it in h.
+	ShakeSum256(h, buf)
+	assert.Equal(t, "0f65fe41fc353e52c55667bb9e2b27bfcc8476f2c413e9437d272ee3194a4e3146d05ec04a25d16b8f577c19b82d16b1424c3e022e783d2b4da98de3658d363d", hex.EncodeToString(h))
+}
+
+func TestStateHashRhoOffsets(t *testing.T) {
+	assert.Equal(t, keccak.RhoOffsets(), [25]int{
+		0, 1, 62, 28, 27,
+		36, 44, 6, 55, 20,
+		3, 10, 43, 25, 39,
+		41, 45, 15, 21, 8,
+		18, 2, 61, 56, 14,
+	})
+}
+
+// testDigests contains functions returning hash.Hash instances
+// with output-length equal to the KAT length for SHA-3, Keccak
+// and SHAKE instances.
+var testDigests = map[string]func() State{
+	"SHA3-224": New224,
+	"SHA3-256": New256,
+	"SHA3-384": New384,
+	"SHA3-512": New512,
+}
+
+// structs used to marshal JSON test-cases.
+type KeccakKats struct {
+	Kats map[string][]struct {
+		Digest  string `json:"digest"`
+		Length  int64  `json:"length"`
+		Message string `json:"message"`
+
+		// Defined only for cSHAKE
+		N string `json:"N"`
+		S string `json:"S"`
+	}
+}
+
+// TestKeccakKats tests the SHA-3 and Shake implementations against all the
+// ShortMsgKATs from https://github.com/gvanas/KeccakCodePackage
+// (The testvectors are stored in keccakKats.json.deflate due to their length.)
+func TestKeccakKats(t *testing.T) {
+	// Read the KATs.
+	deflated, err := os.Open(katFilename)
+	if err != nil {
+		t.Errorf("error opening %s: %s", katFilename, err)
+	}
+	file := flate.NewReader(deflated)
+	dec := json.NewDecoder(file)
+	var katSet KeccakKats
+	err = dec.Decode(&katSet)
+	if err != nil {
+		t.Errorf("error decoding KATs: %s", err)
+	}
+
+	for algo, function := range testDigests {
+		d := function()
+		for _, kat := range katSet.Kats[algo] {
+			d.Reset()
+			in, err := hex.DecodeString(kat.Message)
+			if err != nil {
+				t.Errorf("error decoding KAT: %s", err)
+			}
+			_, _ = d.Write(in[:kat.Length/8])
+			got := strings.ToUpper(hex.EncodeToString(d.Sum(nil)))
+			if got != kat.Digest {
+				t.Errorf("function=%s, length=%d\nmessage:\n %s\ngot:\n  %s\nwanted:\n %s",
+					algo, kat.Length, kat.Message, got, kat.Digest)
+				t.Logf("wanted %+v", kat)
+				t.FailNow()
+			}
+			continue
+		}
+	}
+}
+
+// sequentialBytes produces a buffer of size consecutive bytes 0x00, 0x01, ..., used for testing.
+//
+// The alignment of each slice is intentionally randomized to detect alignment
+// issues in the implementation. See https://golang.org/issue/37644.
+// Ideally, the compiler should fuzz the alignment itself.
+// (See https://golang.org/issue/35128.)
+func sequentialBytes(size int) []byte {
+	alignmentOffset := rand.Intn(8) // nolint:gosec
+	result := make([]byte, size+alignmentOffset)[alignmentOffset:]
+	for i := range result {
+		result[i] = byte(i)
+	}
+	return result
+}
+
+// benchmarkShake is specialized to the Shake instances, which don't
+// require a copy on reading output.
+func benchmarkShake(b *testing.B, h State, size, num int) {
+	b.StopTimer()
+	h.Reset()
+	data := sequentialBytes(size)
+	d := make([]byte, 32)
+
+	b.SetBytes(int64(size * num))
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		h.Reset()
+		for j := 0; j < num; j++ {
+			_, _ = h.Write(data)
+		}
+		h.Read(d)
+	}
+}
+
+func BenchmarkShake128_MTU(b *testing.B)  { benchmarkShake(b, NewShake128(), 1350, 1) }
+func BenchmarkShake256_MTU(b *testing.B)  { benchmarkShake(b, NewShake256(), 1350, 1) }
+func BenchmarkShake256_16x(b *testing.B)  { benchmarkShake(b, NewShake256(), 16, 1024) }
+func BenchmarkShake256_1MiB(b *testing.B) { benchmarkShake(b, NewShake256(), 1024, 1024) }
+
+// BenchmarkPermutationFunction measures the speed of the permutation function
+// with no input data.
+func BenchmarkPermutationFunction(b *testing.B) {
+	b.SetBytes(int64(200))
+	var lanes [25]uint64
+	for i := 0; i < b.N; i++ {
+		keccak.PermuteWith1600(&lanes)
+	}
+}

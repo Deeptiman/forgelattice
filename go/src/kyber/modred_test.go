@@ -18,7 +18,7 @@ func TestKyberMontgomeryConstant(t *testing.T) {
 	assert.Equal(t, int16(oneEnc), res)
 
 	qm1 := Q - 1
-	qm1Enc := ToMontgomeryWithKyber(qm1)
+	qm1Enc := ToMontgomeryWithKyber(int32(qm1))
 	prod := MontgomeryMul(int32(qm1Enc), int32(qm1Enc))
 	decoded := MontgomeryMul(int32(prod), 1)
 	assert.Equal(t, decoded, int16(1))
@@ -94,12 +94,11 @@ func TestKyberBarrettRandomSigned(t *testing.T) {
 }
 
 func TestKyberBarrettReduceFull(t *testing.T) {
-	Q := Q
 	for x := -1 << 15; x <= 1<<15; x++ {
 		y1 := int32(BarrettRedWith16bit(int32(x)))
-		y2 := int32(x) % Q
+		y2 := int32(x) % int32(Q)
 		if y2 < 0 {
-			y2 += Q
+			y2 += int32(Q)
 		}
 		if y1 != y2 {
 			t.Fatalf("%d %d %d", x, y1, y2) // Fail at: y1 = -3329, y2 = 3329
@@ -108,9 +107,9 @@ func TestKyberBarrettReduceFull(t *testing.T) {
 }
 
 func modQ32(x int32) int16 {
-	y := x % Q
+	y := x % int32(Q)
 	if y < 0 {
-		y += Q
+		y += int32(Q)
 	}
 	return int16(y)
 }
