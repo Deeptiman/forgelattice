@@ -1,20 +1,5 @@
 package kyber
 
-var (
-	// Kyber modulus
-	N       = 256
-	Q int32 = 3329
-
-	// QInv Montgomery constants
-	QInv   int32 = 62209 // qInv = q⁻¹ mod 2¹⁶
-	R2modQ int32 = 1353  // R² mod Q
-
-	// KyberBarrettK16Mu Barrett constants
-	// mu26 = floor(2²⁶ / Kyber_Q) = 20158.86
-	// 20159 candidate selected as floor candidate because it fits perfectly with the computation.
-	BarrettK16Mu int32 = 20159
-)
-
 // MontgomeryMul ...
 //
 // Source: https://github.com/cloudflare/circl/blob/main/pke/kyber/internal/common/field.go#L4
@@ -42,9 +27,9 @@ func MontgomeryMul(a, b int32) int16 {
 	//
 	// [xxxx xxxx xxxx xxxx] [LLLL LLLL LLLL LLLL]
 	// ^ upper 16 bits       ^ lower 16 bits (actual result)
-	t32 := (t - int32(u)*Q) >> 16
+	t32 := (t - int32(u)*int32(Q)) >> 16
 	if t32 < 0 {
-		t32 += Q // complement t32
+		t32 += int32(Q) // complement t32
 	}
 	return int16(t32) // discarding the upper 16-bits leading zeros (nlz).
 }
