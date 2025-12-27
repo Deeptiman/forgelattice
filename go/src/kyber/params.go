@@ -37,7 +37,7 @@ func (which Level) String() string {
 	}
 }
 
-type Poly [N]uint16
+type Poly [N]int16
 
 type PolyVec []Poly
 
@@ -51,6 +51,10 @@ type Params struct {
 type PublicKey struct {
 	rho [32]byte
 	A   PolyMatrix
+}
+
+type PrivateKey struct {
+	Vec PolyVec
 }
 
 func ParamsFor(level Level) Params {
