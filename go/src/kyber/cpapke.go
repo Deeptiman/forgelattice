@@ -25,7 +25,7 @@ func (p *Params) GenerateKeyPair() (*PrivateKey, *PublicKey) {
 	p.GeneratePublicMatrixA(&p.Pk.rho) // A
 
 	p.GenerateSecretVectorNoise(sigma[:], 0) // S
-	p.NTT()
+	p.SecretVectorToNTT()
 
 	lwe := p.GenerateLWENoise(seed[:], uint8(p.K)) // e
 
@@ -43,6 +43,7 @@ func (p *Params) GeneratePublicMatrixA(rho *[32]byte) {
 	for x := 0; x < p.K; x++ {
 		for y := 0; y < p.K; y++ {
 			p.Pk.A[x][y].PolyUniform(rho, byte(y), byte(x))
+			p.Pk.A[x][y].NTT(p.Zeta)
 		}
 	}
 }
@@ -183,7 +184,7 @@ func (p *Poly) GenerateSecretVectorNoiseWithEta3(seed []byte, noiseBuffer uint8)
 	}
 }
 
-func (p *Params) NTT() {
+func (p *Params) SecretVectorToNTT() {
 	for i := 0; i < p.K; i++ {
 		p.Sk.V[i].NTT(p.Zeta)
 	}
