@@ -50,7 +50,7 @@ func TestPolyUniform(t *testing.T) {
 	}
 }
 
-func TestGeneratePublicKey(t *testing.T) {
+func TestGeneratePublicMatrixA(t *testing.T) {
 	testCases := []struct {
 		A PolyMatrix
 		L Level
@@ -123,8 +123,8 @@ func TestGeneratePublicKey(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(fmt.Sprintf("Level=%v", testCase.L.String()), func(t *testing.T) {
 			p := ParamsFor(testCase.L)
-			pk := p.GeneratePublicKey(seedA)
-			assert.Equal(t, pk.A, testCase.A)
+			p.GeneratePublicMatrixA(&seedA)
+			assert.Equal(t, p.A, testCase.A)
 		})
 	}
 }

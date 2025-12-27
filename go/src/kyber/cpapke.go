@@ -16,7 +16,25 @@ import (
 // 8. Output public key (seedA, t)
 // 9. Output secret key s
 
-func (p *Params) GeneratePublicKey(rho [32]byte) PublicKey {
+func (p *Params) GenerateKeyPair() (*PrivateKey, *PublicKey) {
+	seed, _ := GenerateRandomBytes(nil)
+	seedA, sigma := ExpandSeed(seed[:])
+
+	copy(p.Pk.rho[:], seedA[:])
+
+	p.GeneratePublicMatrixA(&p.Pk.rho) // A
+
+	p.GenerateSecretVectorNoise(sigma[:], 0) // S
+	p.NTT()
+
+	lwe := p.GenerateLWENoise(seed[:], uint8(p.K)) // e
+
+	// A.s + e
+
+	return nil, nil
+}
+
+func (p *Params) GeneratePublicMatrixA(rho *[32]byte) {
 	// 1. Gather 32-bytes random numbers (rho).
 	// 2. Shake it with 128-bit for each row & column and rho bytes.
 	// 3. Apply rejection sampler for each iteration to collect 12-bits of buffer.
@@ -24,10 +42,9 @@ func (p *Params) GeneratePublicKey(rho [32]byte) PublicKey {
 	// 5. Complete the loop to generate KxK matrix uniform within [0 ... Q)
 	for x := 0; x < p.K; x++ {
 		for y := 0; y < p.K; y++ {
-			p.A[x][y].PolyUniform(&rho, byte(y), byte(x))
+			p.Pk.A[x][y].PolyUniform(rho, byte(y), byte(x))
 		}
 	}
-	return PublicKey{rho: rho, A: p.A}
 }
 
 func (p *Poly) PolyUniform(rho *[32]byte, x, y byte) *Poly {
@@ -58,7 +75,34 @@ func (p *Poly) PolyUniform(rho *[32]byte, x, y byte) *Poly {
 	return p
 }
 
-func (p *Poly) DeriveNoiseWithEta2(seed []byte, noiseBuffer uint8) {
+func (p *Params) GenerateLWENoise(seed []byte, nonce uint8) *PolyVec {
+	v := make(PolyVec, p.K)
+	for i := 0; i < p.K; i++ {
+		switch p.Eta {
+		case 2:
+			v[i].GenerateSecretVectorNoiseWithEta2(seed[:], nonce+uint8(i+0x1f))
+		case 3:
+			v[i].GenerateSecretVectorNoiseWithEta3(seed[:], nonce+uint8(i+0x1f))
+		}
+	}
+	for i := 0; i < p.K; i++ {
+		v[i].NTT(p.Zeta)
+	}
+	return &v
+}
+
+func (p *Params) GenerateSecretVectorNoise(seed []byte, nonce uint8) {
+	for i := 0; i < p.K; i++ {
+		switch p.Eta {
+		case 2:
+			p.Sk.V[i].GenerateSecretVectorNoiseWithEta2(seed[:], nonce+uint8(i+0x1f))
+		case 3:
+			p.Sk.V[i].GenerateSecretVectorNoiseWithEta3(seed[:], nonce+uint8(i+0x1f))
+		}
+	}
+}
+
+func (p *Poly) GenerateSecretVectorNoiseWithEta2(seed []byte, noiseBuffer uint8) {
 	const (
 		mask    = uint64(0x5555555555555555)
 		sumBits = 2
@@ -92,7 +136,7 @@ func (p *Poly) DeriveNoiseWithEta2(seed []byte, noiseBuffer uint8) {
 	}
 }
 
-func (p *Poly) DeriveNoiseWithEta3(seed []byte, noiseBuffer uint8) {
+func (p *Poly) GenerateSecretVectorNoiseWithEta3(seed []byte, noiseBuffer uint8) {
 	const (
 		mask    = uint64(0x249249249249)
 		sumBits = 3
@@ -136,5 +180,11 @@ func (p *Poly) DeriveNoiseWithEta3(seed []byte, noiseBuffer uint8) {
 			p[out] = a - b
 			out++
 		}
+	}
+}
+
+func (p *Params) NTT() {
+	for i := 0; i < p.K; i++ {
+		p.Sk.V[i].NTT(p.Zeta)
 	}
 }

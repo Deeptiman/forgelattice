@@ -43,9 +43,14 @@ type PolyVec []Poly
 
 type PolyMatrix []PolyVec
 
+type Mat PolyMatrix
+
 type Params struct {
-	K int
-	A PolyMatrix
+	K    int
+	Eta  int
+	Zeta [128]int16
+	Pk   PublicKey
+	Sk   PrivateKey
 }
 
 type PublicKey struct {
@@ -54,17 +59,17 @@ type PublicKey struct {
 }
 
 type PrivateKey struct {
-	Vec PolyVec
+	V PolyVec
 }
 
 func ParamsFor(level Level) Params {
 	switch level {
 	case Level512:
-		return Params{K: 2, A: NewPolyMatrix(level)}
+		return Params{K: 2, Eta: 2, Zeta: PrecomputeKyberZetas(), Pk: PublicKey{A: NewPolyMatrix(level)}, Sk: PrivateKey{V: NewPolyVec(level)}}
 	case Level768:
-		return Params{K: 3, A: NewPolyMatrix(level)}
+		return Params{K: 3, Eta: 3, Zeta: PrecomputeKyberZetas(), Pk: PublicKey{A: NewPolyMatrix(level)}, Sk: PrivateKey{V: NewPolyVec(level)}}
 	case Level1024:
-		return Params{K: 4, A: NewPolyMatrix(level)}
+		return Params{K: 4, Eta: 3, Zeta: PrecomputeKyberZetas(), Pk: PublicKey{A: NewPolyMatrix(level)}, Sk: PrivateKey{V: NewPolyVec(level)}}
 	default:
 		panic("invalid kyber level")
 	}
