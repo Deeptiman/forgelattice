@@ -50,7 +50,7 @@ func TestPolyUniform(t *testing.T) {
 	}
 }
 
-func TestGeneratePublicKey(t *testing.T) {
+func TestGeneratePublicMatrixA(t *testing.T) {
 	testCases := []struct {
 		A PolyMatrix
 		L Level
@@ -123,8 +123,8 @@ func TestGeneratePublicKey(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(fmt.Sprintf("Level=%v", testCase.L.String()), func(t *testing.T) {
 			p := ParamsFor(testCase.L)
-			pk := p.GeneratePublicKey(seedA)
-			assert.Equal(t, pk.A, testCase.A)
+			p.GeneratePublicMatrixA(&seedA)
+			assert.Equal(t, p.Pk.A, testCase.A)
 		})
 	}
 }
@@ -192,13 +192,33 @@ func TestDeriveNoiseWithCBD(t *testing.T) {
 			var p Poly
 			switch testCase.Eta {
 			case 2:
-				p.DeriveNoiseWithEta2(seed[:], testCase.Noise)
+				p.GenerateSecretVectorNoiseWithEta2(seed[:], testCase.Noise)
 			case 3:
-				p.DeriveNoiseWithEta3(seed[:], testCase.Noise)
+				p.GenerateSecretVectorNoiseWithEta3(seed[:], testCase.Noise)
 			}
 			if p != testCase.P {
 				t.Fatalf("%v\n%v", p, testCase.P)
 			}
+		})
+	}
+}
+
+func TestGenerateKeyPair(t *testing.T) {
+	for _, lvl := range []Level{Level512, Level768, Level1024} {
+		t.Run(fmt.Sprintf("Key-Pair=%s", lvl.String()), func(t *testing.T) {
+			p := ParamsFor(lvl)
+			pubKey, privKey := p.GenerateKeyPair()
+			privateKeyBytes := p.PackPrivateKey()
+			publicKeyBytes := p.PackPublicKey()
+
+			fmt.Println("PrivateKey = ", privKey.ToString(privateKeyBytes))
+			fmt.Println("PublicKey = ", pubKey.ToString(publicKeyBytes))
+
+			privateKey := p.UnPackPrivateKey(privateKeyBytes)
+			publicKey := p.UnPackPublicKey(publicKeyBytes)
+
+			assert.Equal(t, privKey.V, privateKey.V)
+			assert.Equal(t, pubKey.T, publicKey.T)
 		})
 	}
 }

@@ -6,6 +6,8 @@ const (
 	// Q Kyber modulus
 	Q uint32 = 3329
 
+	PolySize = 384
+
 	// QInv Montgomery constants
 	QInv   int32 = 62209 // qInv = q⁻¹ mod 2¹⁶
 	R2modQ int32 = 1353  // R² mod Q
@@ -37,34 +39,36 @@ func (which Level) String() string {
 	}
 }
 
-type Poly [N]int16
-
-type PolyVec []Poly
-
-type PolyMatrix []PolyVec
-
 type Params struct {
-	K int
-	A PolyMatrix
+	K              int
+	Eta            int
+	PublicKeySize  int
+	PrivateKeySize int
+	Zetas          [128]int16
+	Pk             PublicKey
+	Sk             PrivateKey
+	Lwe            PolyVec
 }
 
 type PublicKey struct {
 	rho [32]byte
 	A   PolyMatrix
+	T   PolyVec // transient accumulator
 }
 
 type PrivateKey struct {
-	Vec PolyVec
+	V PolyVec
+	Z [32]byte
 }
 
-func ParamsFor(level Level) Params {
-	switch level {
+func ParamsFor(l Level) Params {
+	switch l {
 	case Level512:
-		return Params{K: 2, A: NewPolyMatrix(level)}
+		return Params{K: 2, Eta: 2, PublicKeySize: 32 + l.K()*PolySize, PrivateKeySize: l.K() * PolySize, Zetas: PrecomputeKyberZetas(), Pk: PublicKey{A: NewPolyMatrix(l)}, Sk: PrivateKey{V: NewPolyVec(l)}}
 	case Level768:
-		return Params{K: 3, A: NewPolyMatrix(level)}
+		return Params{K: 3, Eta: 3, PublicKeySize: 32 + l.K()*PolySize, PrivateKeySize: l.K() * PolySize, Zetas: PrecomputeKyberZetas(), Pk: PublicKey{A: NewPolyMatrix(l)}, Sk: PrivateKey{V: NewPolyVec(l)}}
 	case Level1024:
-		return Params{K: 4, A: NewPolyMatrix(level)}
+		return Params{K: 4, Eta: 3, PublicKeySize: 32 + l.K()*PolySize, PrivateKeySize: l.K() * PolySize, Zetas: PrecomputeKyberZetas(), Pk: PublicKey{A: NewPolyMatrix(l)}, Sk: PrivateKey{V: NewPolyVec(l)}}
 	default:
 		panic("invalid kyber level")
 	}
