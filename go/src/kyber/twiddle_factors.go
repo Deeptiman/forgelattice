@@ -6,7 +6,7 @@ import (
 )
 
 func PrecomputeKyberZetas() [128]int16 {
-	zetas := [128]int16{}
+	var zetas [128]int16
 	zeta := FindPrimitiveRoot()
 	for i := 0; i < N/2; i++ {
 		exp := BitReverse(i)
