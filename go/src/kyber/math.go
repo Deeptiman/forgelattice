@@ -29,3 +29,19 @@ func ModPow(base, exp, mod int) int {
 	}
 	return res
 }
+
+func ModInverse(a, q int32) int32 {
+	var t0, t1 int32 = 0, 1
+	var r0, r1 int32 = q, a
+
+	for r1 != 0 {
+		quotient := r0 / r1
+		r0, r1 = r1, r0-quotient*r1
+		t0, t1 = t1, t0-quotient*t1
+	}
+
+	if t0 < 0 {
+		t0 += q
+	}
+	return t0
+}

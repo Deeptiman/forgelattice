@@ -207,7 +207,8 @@ func TestGenerateKeyPair(t *testing.T) {
 	for _, lvl := range []Level{Level512, Level768, Level1024} {
 		t.Run(fmt.Sprintf("Key-Pair=%s", lvl.String()), func(t *testing.T) {
 			p := ParamsFor(lvl)
-			pubKey, privKey := p.GenerateKeyPair()
+			seed, _ := GenerateRandomBytes(nil)
+			pubKey, privKey := p.GenerateKeyPair(seed[:])
 			privateKeyBytes := p.PackPrivateKey()
 			publicKeyBytes := p.PackPublicKey()
 
@@ -217,8 +218,9 @@ func TestGenerateKeyPair(t *testing.T) {
 			privateKey := p.UnPackPrivateKey(privateKeyBytes)
 			publicKey := p.UnPackPublicKey(publicKeyBytes)
 
-			assert.Equal(t, privKey.V, privateKey.V)
+			assert.Equal(t, privKey, privateKey)
 			assert.Equal(t, pubKey.T, publicKey.T)
+			assert.Equal(t, pubKey.rho, publicKey.rho)
 		})
 	}
 }

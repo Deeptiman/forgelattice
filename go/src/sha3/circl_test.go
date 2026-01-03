@@ -16,6 +16,19 @@ const (
 	katFilename = "testdata/keccakKats.json.deflate"
 )
 
+func TestNew512(t *testing.T) {
+	var seed [32]byte
+	for i := 0; i < 32; i++ {
+		seed[i] = byte(i)
+	}
+	seed[0] = byte(5)
+	var expSeed [64]byte
+	h1 := New512()
+	_, _ = h1.Write(seed[:])
+	h1.Read(expSeed[:])
+	assert.Equal(t, expSeed, [64]byte{52, 193, 209, 219, 73, 20, 126, 176, 63, 152, 104, 52, 208, 83, 48, 171, 41, 132, 137, 178, 192, 82, 242, 136, 246, 85, 3, 176, 23, 127, 78, 32, 120, 230, 199, 126, 165, 190, 21, 142, 188, 75, 11, 89, 227, 180, 72, 195, 182, 186, 21, 241, 110, 38, 12, 153, 9, 57, 128, 114, 154, 34, 60, 206})
+}
+
 func TestStateHash_WithSHAKE256(t *testing.T) {
 	k := []byte("this is a secret key; you should generate a strong random key that's at least 32 bytes long")
 	buf := []byte("and this is some data to authenticate")
