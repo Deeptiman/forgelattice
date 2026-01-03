@@ -87,6 +87,15 @@ func (p *Poly) GenerateSecretVectorNoiseWithEta3(seed []byte, noiseBuffer uint8)
 	}
 }
 
+func (p *Poly) SampleNoise(seed []byte, noiseBuffer uint8, eta int) {
+	switch eta {
+	case 2:
+		p.GenerateSecretVectorNoiseWithEta2(seed, noiseBuffer)
+	case 3:
+		p.GenerateSecretVectorNoiseWithEta3(seed, noiseBuffer)
+	}
+}
+
 func (p *Poly) GenerateSecretVectorNoiseWithEta2(seed []byte, noiseBuffer uint8) {
 	const (
 		mask    = uint64(0x5555555555555555)
@@ -121,36 +130,30 @@ func (p *Poly) GenerateSecretVectorNoiseWithEta2(seed []byte, noiseBuffer uint8)
 	}
 }
 
-func (p *Poly) MulWrapped(a, b *Poly, zetas [128]int16) {
+func (p *Poly) MulWrapped(a, b *Poly) {
 	k := 64
 	for i := 0; i < N; i += 4 {
 		zeta := zetas[k]
 		k++
 
 		// first pair: x² = +zeta
-		a0, a1 := int32(a[i]), int32(a[i+1])
-		b0, b1 := int32(b[i]), int32(b[i+1])
-
-		t0 := MontgomeryMul(a1, b1)
+		t0 := MontgomeryMul(int32(a[i+1]), int32(b[i+1]))
 		t0 = MontgomeryMul(int32(t0), int32(zeta))
-		t0 += MontgomeryMul(a0, b0)
+		t0 += MontgomeryMul(int32(a[i]), int32(b[i]))
 
-		t1 := MontgomeryMul(a0, b1)
-		t1 += MontgomeryMul(a1, b0)
+		t1 := MontgomeryMul(int32(a[i]), int32(b[i+1]))
+		t1 += MontgomeryMul(int32(a[i+1]), int32(b[i]))
 
 		p[i] += t0
 		p[i+1] += t1
 
 		// second pair: x² = -zeta
-		a2, a3 := int32(a[i+2]), int32(a[i+3])
-		b2, b3 := int32(b[i+2]), int32(b[i+3])
-
-		t2 := MontgomeryMul(a3, b3)
+		t2 := MontgomeryMul(int32(a[i+3]), int32(b[i+3]))
 		t2 = -MontgomeryMul(int32(t2), int32(zeta))
-		t2 += MontgomeryMul(a2, b2)
+		t2 += MontgomeryMul(int32(a[i+2]), int32(b[i+2]))
 
-		t3 := MontgomeryMul(a2, b3)
-		t3 += MontgomeryMul(a3, b2)
+		t3 := MontgomeryMul(int32(a[i+2]), int32(b[i+3]))
+		t3 += MontgomeryMul(int32(a[i+3]), int32(b[i+2]))
 
 		p[i+2] += t2
 		p[i+3] += t3
@@ -159,7 +162,7 @@ func (p *Poly) MulWrapped(a, b *Poly, zetas [128]int16) {
 
 func (p *Poly) Normalize() {
 	for i := 0; i < N; i++ {
-		p[i] = BarrettRedWith16bit(int32(p[i]))
+		p[i] = maybeReduce(p[i])
 	}
 }
 
@@ -178,7 +181,18 @@ func (p *Poly) ToMont() {
 func (p *Poly) Add(q Poly) {
 	for i := 0; i < N; i++ {
 		p[i] += q[i]
-		p[i] = BarrettRedWith16bit(int32(p[i]))
+	}
+}
+
+func (p *Poly) AddWithOutBarrett(q Poly) {
+	for i := 0; i < N; i++ {
+		p[i] += q[i]
+	}
+}
+
+func (p *Poly) Sub(q Poly) {
+	for i := 0; i < N; i++ {
+		p[i] -= q[i]
 	}
 }
 

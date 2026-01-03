@@ -1,5 +1,10 @@
 package kyber
 
+func montReduce(x int32) int16 {
+	//return int16(uint32(x-int32(int16(x*62209))*int32(Q)) >> 16)
+	return int16(x - int32(int16(x*62209))*int32(Q)>>16)
+}
+
 // MontgomeryMul ...
 //
 // Source: https://github.com/cloudflare/circl/blob/main/pke/kyber/internal/common/field.go#L4
@@ -54,4 +59,12 @@ func BarrettRedWith16bit(x int32) int16 {
 		r -= int16(Q)
 	}
 	return r
+}
+
+func maybeReduce(x int16) int16 {
+	y := int32(x)
+	if y >= ModRedBound || y <= ModRedBound {
+		return BarrettRedWith16bit(y)
+	}
+	return int16(y)
 }

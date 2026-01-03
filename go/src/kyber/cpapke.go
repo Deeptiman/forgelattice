@@ -10,26 +10,56 @@ package kyber
 // 7. Compute [A * s + e (mod Q)]
 // 8. Output public key (seedA, t)
 // 9. Output secret key s
+// 10. Encrypt random  32-bytes with PublicKey.
+// 11. Decrypt the ciphertext with PrivateKey.
 
-func (p *Params) GenerateKeyPair() (*PublicKey, *PrivateKey) {
-	seed, _ := GenerateRandomBytes(nil)
+func (p *Params) GenerateKeyPair(seed []byte) (*PublicKey, *PrivateKey) {
 	seedA, sigma := ExpandSeed(seed[:])
 
-	copy(p.Pk.rho[:], seedA[:])
-
+	copy(p.Pk.rho[:], seedA[:32])
 	p.GeneratePublicMatrixA(&p.Pk.rho) // A
 
-	p.GenerateSecretVectorNoise(sigma[:], 0) // S
-	p.SecretVectorToNTT()
-
-	p.GenerateLWENoise(seed[:], uint8(p.K)) // e
-	p.LWEToNTT()
-
-	p.MulMatrixAWithSecretVector()
-
-	for i := 0; i < p.K; i++ {
-		p.Pk.T[i].Add(p.Lwe[i])
+	for i := 0; i < p.Cfg.K; i++ {
+		p.Sk.V[i].SampleNoise(sigma[:], uint8(i), p.Cfg.Eta1) // S
 	}
+
+	for i := 0; i < p.Cfg.K; i++ {
+		p.Sk.V[i].NTT()
+	}
+
+	for i := 0; i < p.Cfg.K; i++ {
+		p.Sk.V[i].Normalize()
+	}
+
+	eh := make(PolyVec, p.Cfg.K)
+	for i := 0; i < p.Cfg.K; i++ {
+		eh[i].SampleNoise(sigma[:], uint8(p.Cfg.K)+uint8(i), p.Cfg.Eta1) // e
+	}
+
+	for i := 0; i < p.Cfg.K; i++ {
+		eh[i].NTT()
+	}
+
+	p.Pk.T = make(PolyVec, p.Cfg.K)
+	for i := 0; i < p.Cfg.K; i++ {
+		var t Poly
+		publicMatrix := p.Pk.A[i]
+		secretVector := p.Sk.V
+		for j := 0; j < p.Cfg.K; j++ {
+			t.MulWrapped(&publicMatrix[j], &secretVector[j])
+		}
+		p.Pk.T[i].Add(t)
+		p.Pk.T[i].ToMont()
+	}
+
+	for i := 0; i < p.Cfg.K; i++ {
+		p.Pk.T[i].Add(eh[i])
+	}
+
+	for i := 0; i < p.Cfg.K; i++ {
+		p.Pk.T[i].Normalize()
+	}
+
 	p.Transpose()
 	return &p.Pk, &p.Sk
 }
@@ -40,63 +70,27 @@ func (p *Params) GeneratePublicMatrixA(rho *[32]byte) {
 	// 3. Apply rejection sampler for each iteration to collect 12-bits of buffer.
 	// 4. Add it to the polynomial coefficients.
 	// 5. Complete the loop to generate KxK matrix uniform within [0 ... Q)
-	for x := 0; x < p.K; x++ {
-		for y := 0; y < p.K; y++ {
+	for x := 0; x < p.Cfg.K; x++ {
+		for y := 0; y < p.Cfg.K; y++ {
 			p.Pk.A[x][y].PolyUniform(rho, byte(y), byte(x))
 		}
 	}
 }
 
 func (p *Params) GenerateSecretVectorNoise(seed []byte, nonce uint8) {
-	for i := 0; i < p.K; i++ {
-		switch p.Eta {
+	for i := 0; i < p.Cfg.K; i++ {
+		switch p.Cfg.Eta1 {
 		case 2:
-			p.Sk.V[i].GenerateSecretVectorNoiseWithEta2(seed[:], nonce+uint8(i+0x1f))
+			p.Sk.V[i].GenerateSecretVectorNoiseWithEta2(seed[:], nonce+uint8(i))
 		case 3:
-			p.Sk.V[i].GenerateSecretVectorNoiseWithEta3(seed[:], nonce+uint8(i+0x1f))
+			p.Sk.V[i].GenerateSecretVectorNoiseWithEta3(seed[:], nonce+uint8(i))
 		}
-	}
-}
-
-func (p *Params) GenerateLWENoise(seed []byte, nonce uint8) {
-	p.Lwe = make(PolyVec, p.K)
-	for i := 0; i < p.K; i++ {
-		switch p.Eta {
-		case 2:
-			p.Lwe[i].GenerateSecretVectorNoiseWithEta2(seed[:], nonce+uint8(i+0x1f))
-		case 3:
-			p.Lwe[i].GenerateSecretVectorNoiseWithEta3(seed[:], nonce+uint8(i+0x1f))
-		}
-	}
-}
-
-func (p *Params) LWEToNTT() {
-	for i := 0; i < p.K; i++ {
-		p.Lwe[i].NTT(p.Zetas)
-	}
-}
-
-func (p *Params) SecretVectorToNTT() {
-	for i := 0; i < p.K; i++ {
-		p.Sk.V[i].NTT(p.Zetas)
-		p.Sk.V[i].Normalize()
-	}
-}
-
-func (p *Params) MulMatrixAWithSecretVector() {
-	p.Pk.T = make(PolyVec, p.K)
-	for i := 0; i < p.K; i++ {
-		p.Pk.T[i].Zero()
-		for j := 0; j < p.K; j++ {
-			p.Pk.T[i].MulWrapped(&p.Pk.A[i][j], &p.Sk.V[i], p.Zetas)
-		}
-		p.Pk.T[i].ToMont()
 	}
 }
 
 func (p *Params) Transpose() {
-	for i := 0; i < p.K-1; i++ {
-		for j := i + 1; j < p.K; j++ {
+	for i := 0; i < p.Cfg.K-1; i++ {
+		for j := i + 1; j < p.Cfg.K; j++ {
 			t := p.Pk.A[i][j]
 			p.Pk.A[i][j] = p.Pk.A[j][i]
 			p.Pk.A[j][i] = t

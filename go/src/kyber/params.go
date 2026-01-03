@@ -12,11 +12,16 @@ const (
 	QInv   int32 = 62209 // qInv = q⁻¹ mod 2¹⁶
 	R2modQ int32 = 1353  // R² mod Q
 
+	// ModRedBound ....
+	ModRedBound = 1 << 15
+
 	// BarrettK16Mu Barrett constants
 	// mu26 = floor(2²⁶ / Kyber_Q) = 20158.86
 	// 20159 candidate selected as floor candidate because it fits perfectly with the computation.
 	BarrettK16Mu int32 = 20159
 )
+
+var zetas = PrecomputeKyberZetas()
 
 type Level int
 
@@ -26,8 +31,8 @@ const (
 	Level1024              // Kyber-1024
 )
 
-func (which Level) String() string {
-	switch which {
+func (l Level) String() string {
+	switch l {
 	case Level512:
 		return "Kyber-512"
 	case Level768:
@@ -39,15 +44,31 @@ func (which Level) String() string {
 	}
 }
 
-type Params struct {
-	K              int
-	Eta            int
+type Configs struct {
+	// Scheme parameters
+	K int
+	Q int16
+	N int
+
+	// Noise
+	Eta1 int
+	Eta2 int
+
+	// Compression
+	Du int
+	Dv int
+
+	// Key Sizes
 	PublicKeySize  int
 	PrivateKeySize int
-	Zetas          [128]int16
-	Pk             PublicKey
-	Sk             PrivateKey
-	Lwe            PolyVec
+	CiphertextSize int
+}
+
+type Params struct {
+	Cfg Configs
+
+	Pk PublicKey
+	Sk PrivateKey
 }
 
 type PublicKey struct {
@@ -64,11 +85,14 @@ type PrivateKey struct {
 func ParamsFor(l Level) Params {
 	switch l {
 	case Level512:
-		return Params{K: 2, Eta: 2, PublicKeySize: 32 + l.K()*PolySize, PrivateKeySize: l.K() * PolySize, Zetas: PrecomputeKyberZetas(), Pk: PublicKey{A: NewPolyMatrix(l)}, Sk: PrivateKey{V: NewPolyVec(l)}}
+		cfg := Configs{K: 2, Eta1: 3, Eta2: 2, Du: 10, Dv: 4, CiphertextSize: 768, PublicKeySize: 32 + l.K()*PolySize, PrivateKeySize: l.K() * PolySize}
+		return Params{Cfg: cfg, Pk: PublicKey{A: NewPolyMatrix(l)}, Sk: PrivateKey{V: NewPolyVec(l)}}
 	case Level768:
-		return Params{K: 3, Eta: 3, PublicKeySize: 32 + l.K()*PolySize, PrivateKeySize: l.K() * PolySize, Zetas: PrecomputeKyberZetas(), Pk: PublicKey{A: NewPolyMatrix(l)}, Sk: PrivateKey{V: NewPolyVec(l)}}
+		cfg := Configs{K: 3, Eta1: 2, Eta2: 2, Du: 10, Dv: 4, CiphertextSize: 1088, PublicKeySize: 32 + l.K()*PolySize, PrivateKeySize: l.K() * PolySize}
+		return Params{Cfg: cfg, Pk: PublicKey{A: NewPolyMatrix(l)}, Sk: PrivateKey{V: NewPolyVec(l)}}
 	case Level1024:
-		return Params{K: 4, Eta: 3, PublicKeySize: 32 + l.K()*PolySize, PrivateKeySize: l.K() * PolySize, Zetas: PrecomputeKyberZetas(), Pk: PublicKey{A: NewPolyMatrix(l)}, Sk: PrivateKey{V: NewPolyVec(l)}}
+		cfg := Configs{K: 4, Eta1: 2, Eta2: 2, Du: 11, Dv: 5, CiphertextSize: 1568, PublicKeySize: 32 + l.K()*PolySize, PrivateKeySize: l.K() * PolySize}
+		return Params{Cfg: cfg, Pk: PublicKey{A: NewPolyMatrix(l)}, Sk: PrivateKey{V: NewPolyVec(l)}}
 	default:
 		panic("invalid kyber level")
 	}

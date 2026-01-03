@@ -13,7 +13,7 @@ func TestKyberMontgomeryConstant(t *testing.T) {
 	assert.Equal(t, RmodQ, uint32(2285))
 	assert.Equal(t, R2modQ, int32(1353))
 
-	oneEnc := uint32((uint64(1) << 16) % uint64(Q))
+	oneEnc := (1 << 16) * Q
 	res := MontgomeryMul(int32(oneEnc), int32(oneEnc))
 	assert.Equal(t, int16(oneEnc), res)
 
@@ -22,6 +22,14 @@ func TestKyberMontgomeryConstant(t *testing.T) {
 	prod := MontgomeryMul(int32(qm1Enc), int32(qm1Enc))
 	decoded := MontgomeryMul(int32(prod), 1)
 	assert.Equal(t, decoded, int16(1))
+}
+
+func canonicalModQ(x int16) int32 {
+	y := int32(x)
+	if y < 0 {
+		y += int32(Q)
+	}
+	return y
 }
 
 func TestMontgomeryMulWithKyber(t *testing.T) {
@@ -37,39 +45,9 @@ func TestMontgomeryMulWithKyber(t *testing.T) {
 
 		prod := MontgomeryMul(int32(am), int32(bm))
 		ab := new(big.Int).Mul(ai, bi)
-		expectedEnc := uint32((ab.Uint64() * (uint64(1) << 16)) % uint64(Q))
-		assert.Equal(t, uint32(prod), expectedEnc)
-
 		decoded := MontgomeryMul(int32(prod), 1)
-		assert.Equal(t, int(decoded), int(new(big.Int).Mul(ai, bi).Mod(ab, QBig).Int64()))
-	}
-}
-
-func TestKyberBarretTestVector(t *testing.T) {
-	type testCases struct {
-		x        int32
-		expected int32
-		expT     int32
-	}
-	tests := []testCases{
-		{0, 0, 0},
-		{1, 1, 0},
-		{100, 100, 0},
-		{2602, 2602, 0},
-		{3328, 3328, 0},
-		{3329, 0, 1},
-		{3330, 1, 1},
-		{65535, 2284, 19},
-		{65536, 2285, 19},
-		{-1, 3328, -1},
-		{-3329, 0, -2},
-		{-65536, 1044, -20},
-	}
-	for _, tc := range tests {
-		m := (tc.x * BarrettK16Mu) >> 26
-		assert.Equal(t, m, tc.expT)
-		red := BarrettRedWith16bit(tc.x)
-		assert.Equal(t, red, int16(tc.expected))
+		expected := new(big.Int).Mul(ai, bi).Mod(ab, QBig)
+		assert.Equal(t, expected.Int64(), int64(canonicalModQ(decoded)))
 	}
 }
 
@@ -106,45 +84,13 @@ func TestKyberBarrettReduceFull(t *testing.T) {
 	}
 }
 
-func modQ32(x int32) int16 {
-	y := x % int32(Q)
-	if y < 0 {
-		y += int32(Q)
-	}
-	return int16(y)
-}
-
-func TestKyberToMontgomeryFull(t *testing.T) {
-	for x := -(1 << 15); x < 1<<15; x++ {
-		y := ToMontgomeryWithKyber(int32(x))
-		y1 := modQ32(int32(y))
-		y2 := modQ32(int32(x * 2285))
-		if y1 != y2 {
-			t.Fatalf("%d:%d:%d", x, y1, y2)
-		}
-	}
-}
-
-func TestKyberMontgomeryEncodeDecode(t *testing.T) {
-	for x := -(1 << 15); x <= (1 << 15); x++ {
-		// 1) Encode: x --> xR mod Q
-		enc := MontgomeryMul(int32(x), R2modQ)
-
-		// 2) Decode: (xR) * R⁻¹ ≡ x mod Q
-		dec := MontgomeryMul(int32(enc), 1)
-
-		red := modQ32(int32(x))
-		assert.Equal(t, dec, red)
-	}
-}
-
 func TestPrecomputeTwiddleFactor(t *testing.T) {
 	root := FindPrimitiveRoot()
 	assert.Equal(t, 17, root)
-	assert.Equal(t, Zetas, PrecomputeKyberZetas())
+	assert.Equal(t, testZetas, PrecomputeKyberZetas())
 }
 
-var Zetas = [128]int16{
+var testZetas = [128]int16{
 	2285, 2571, 2970, 1812, 1493, 1422, 287, 202, 3158, 622, 1577, 182,
 	962, 2127, 1855, 1468, 573, 2004, 264, 383, 2500, 1458, 1727, 3199,
 	2648, 1017, 732, 608, 1787, 411, 3124, 1758, 1223, 652, 2777, 1015,

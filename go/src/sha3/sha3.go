@@ -1,13 +1,15 @@
 package sha3
 
-import "github.com/Deeptiman/forgekey/go/src/sha3/keccak"
+import (
+	"github.com/Deeptiman/forgekey/go/src/sha3/keccak"
+)
 
 type Sponge int
 
 const (
-	Absorbing Sponge = 1
-	Squeezing Sponge = 2
-	maxBit    int    = 168
+	Absorbing Sponge = iota
+	Squeezing
+	maxBit int = 168
 
 	dsbyteShake = 0x1f
 	rate128     = 168
@@ -81,9 +83,9 @@ func (s *State) Read(out []byte) {
 
 	squeeze := 0
 	for len(out) > 0 {
-		n := copy(out, s.parcel[:s.buffOffSets])
-		out = out[n:]
+		n := copy(out, s.buf())
 		squeeze += n
+		out = out[n:]
 
 		if squeeze == s.buffOffSets {
 			s.permute()
