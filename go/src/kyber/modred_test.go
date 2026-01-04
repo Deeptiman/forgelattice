@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestKyberMontgomeryConstant(t *testing.T) {
+func TestMontgomeryConstant(t *testing.T) {
 	RmodQ := uint32((uint64(1) << 16) % uint64(Q))
 	assert.Equal(t, RmodQ, uint32(2285))
 	assert.Equal(t, R2modQ, int32(1353))
@@ -18,7 +18,7 @@ func TestKyberMontgomeryConstant(t *testing.T) {
 	assert.Equal(t, int16(oneEnc), res)
 
 	qm1 := Q - 1
-	qm1Enc := ToMontgomeryWithKyber(int32(qm1))
+	qm1Enc := ToMontgomery(int32(qm1))
 	prod := MontgomeryMul(int32(qm1Enc), int32(qm1Enc))
 	decoded := MontgomeryMul(int32(prod), 1)
 	assert.Equal(t, decoded, int16(1))
@@ -32,7 +32,7 @@ func canonicalModQ(x int16) int32 {
 	return y
 }
 
-func TestMontgomeryMulWithKyber(t *testing.T) {
+func TestMontgomeryMul(t *testing.T) {
 	QBig := big.NewInt(int64(Q))
 	for i := 0; i < 2000; i++ {
 		ai, _ := rand.Int(rand.Reader, QBig)
@@ -40,8 +40,8 @@ func TestMontgomeryMulWithKyber(t *testing.T) {
 		a := int32(ai.Int64())
 		b := int32(bi.Int64())
 
-		am := ToMontgomeryWithKyber(a)
-		bm := ToMontgomeryWithKyber(b)
+		am := ToMontgomery(a)
+		bm := ToMontgomery(b)
 
 		prod := MontgomeryMul(int32(am), int32(bm))
 		ab := new(big.Int).Mul(ai, bi)
@@ -60,7 +60,7 @@ func canonicalModQSigned(x int32) int32 {
 	return int32(r)
 }
 
-func TestKyberBarrettRandomSigned(t *testing.T) {
+func TestBarrettRandomSigned(t *testing.T) {
 	seed := int64(42)
 	rng := mRand.New(mRand.NewSource(seed))
 
@@ -71,7 +71,7 @@ func TestKyberBarrettRandomSigned(t *testing.T) {
 	}
 }
 
-func TestKyberBarrettReduceFull(t *testing.T) {
+func TestBarrettReduceFull(t *testing.T) {
 	for x := -1 << 15; x <= 1<<15; x++ {
 		y1 := int32(BarrettRedWith16bit(int32(x)))
 		y2 := int32(x) % int32(Q)
@@ -87,7 +87,7 @@ func TestKyberBarrettReduceFull(t *testing.T) {
 func TestPrecomputeTwiddleFactor(t *testing.T) {
 	root := FindPrimitiveRoot()
 	assert.Equal(t, 17, root)
-	assert.Equal(t, testZetas, PrecomputeKyberZetas())
+	assert.Equal(t, testZetas, PrecomputeZetas())
 }
 
 var testZetas = [128]int16{

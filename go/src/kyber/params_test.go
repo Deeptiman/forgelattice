@@ -53,7 +53,14 @@ func TestKyberParams(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(fmt.Sprintf("Param-Test=%s", testCase.Level.String()), func(t *testing.T) {
-			assert.Equal(t, testCase.P, ParamsFor(testCase.Level).Cfg)
+			assert.Equal(t, testCase.P.K, ParamsFor(testCase.Level).K)
+			assert.Equal(t, testCase.P.Eta1, ParamsFor(testCase.Level).Eta1)
+			assert.Equal(t, testCase.P.Eta2, ParamsFor(testCase.Level).Eta2)
+			assert.Equal(t, testCase.P.Du, ParamsFor(testCase.Level).Du)
+			assert.Equal(t, testCase.P.Dv, ParamsFor(testCase.Level).Dv)
+			assert.Equal(t, testCase.P.CiphertextSize, ParamsFor(testCase.Level).CiphertextSize)
+			assert.Equal(t, testCase.P.PublicKeySize, ParamsFor(testCase.Level).PublicKeySize)
+			assert.Equal(t, testCase.P.PrivateKeySize, ParamsFor(testCase.Level).PrivateKeySize)
 		})
 	}
 }

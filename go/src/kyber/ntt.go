@@ -43,7 +43,7 @@ func (p *Poly) InvNTT() {
 	}
 }
 
-func PrecomputeKyberZetas() [128]int16 {
+func PrecomputeZetas() [128]int16 {
 	var z [128]int16
 	zeta := FindPrimitiveRoot()
 	for i := 0; i < N/2; i++ {

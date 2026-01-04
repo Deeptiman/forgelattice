@@ -12,7 +12,7 @@ type (
 	Mat        PolyMatrix
 )
 
-func (p *Poly) PolyUniform(rho *[32]byte, x, y byte) *Poly {
+func (p *Poly) PolyUniform(rho *[32]byte, x, y byte) {
 	shake := sha3.NewShake128()
 	_, _ = shake.Write(rho[:])
 	_, _ = shake.Write([]byte{x, y})
@@ -37,7 +37,49 @@ func (p *Poly) PolyUniform(rho *[32]byte, x, y byte) *Poly {
 			}
 		}
 	}
-	return p
+}
+
+func (p *Poly) SampleNoise(seed []byte, noiseBuffer uint8, eta int) {
+	switch eta {
+	case 2:
+		p.GenerateSecretVectorNoiseWithEta2(seed, noiseBuffer)
+	case 3:
+		p.GenerateSecretVectorNoiseWithEta3(seed, noiseBuffer)
+	}
+}
+
+func (p *Poly) GenerateSecretVectorNoiseWithEta2(seed []byte, noiseBuffer uint8) {
+	const (
+		mask    = uint64(0x5555555555555555)
+		sumBits = 2
+	)
+
+	h := sha3.NewShake256()
+	_, _ = h.Write(seed[:])
+	_, _ = h.Write([]byte{noiseBuffer}) // domain-separator byte
+
+	var buf [128]byte
+	h.Read(buf[:])
+	out := 0
+	for i := 0; i < len(buf); i += 8 {
+		// Load 64 bits
+		t := binary.LittleEndian.Uint64(buf[i:])
+
+		// Form packed sums: (a0+a1), (b0+b1), ...
+		d := t & mask
+		for k := uint(1); k < sumBits; k++ {
+			d += (t >> k) & mask
+		}
+
+		for j := 0; j < 16 && out < len(p); j++ {
+			a := int16(d & ((1 << sumBits) - 1))
+			d >>= sumBits
+			b := int16(d & ((1 << sumBits) - 1))
+			d >>= sumBits
+			p[out] = a - b
+			out++
+		}
+	}
 }
 
 func (p *Poly) GenerateSecretVectorNoiseWithEta3(seed []byte, noiseBuffer uint8) {
@@ -80,49 +122,6 @@ func (p *Poly) GenerateSecretVectorNoiseWithEta3(seed []byte, noiseBuffer uint8)
 			d >>= sumBits
 			// b = b1 + b2 + b3
 			b := int16(d) & 0x7
-			d >>= sumBits
-			p[out] = a - b
-			out++
-		}
-	}
-}
-
-func (p *Poly) SampleNoise(seed []byte, noiseBuffer uint8, eta int) {
-	switch eta {
-	case 2:
-		p.GenerateSecretVectorNoiseWithEta2(seed, noiseBuffer)
-	case 3:
-		p.GenerateSecretVectorNoiseWithEta3(seed, noiseBuffer)
-	}
-}
-
-func (p *Poly) GenerateSecretVectorNoiseWithEta2(seed []byte, noiseBuffer uint8) {
-	const (
-		mask    = uint64(0x5555555555555555)
-		sumBits = 2
-	)
-
-	h := sha3.NewShake256()
-	_, _ = h.Write(seed[:])
-	_, _ = h.Write([]byte{noiseBuffer}) // domain-separator byte
-
-	var buf [128]byte
-	h.Read(buf[:])
-	out := 0
-	for i := 0; i < len(buf); i += 8 {
-		// Load 64 bits
-		t := binary.LittleEndian.Uint64(buf[i:])
-
-		// Form packed sums: (a0+a1), (b0+b1), ...
-		d := t & mask
-		for k := uint(1); k < sumBits; k++ {
-			d += (t >> k) & mask
-		}
-
-		for j := 0; j < 16 && out < len(p); j++ {
-			a := int16(d & ((1 << sumBits) - 1))
-			d >>= sumBits
-			b := int16(d & ((1 << sumBits) - 1))
 			d >>= sumBits
 			p[out] = a - b
 			out++
@@ -174,17 +173,11 @@ func (p *Poly) Zero() {
 
 func (p *Poly) ToMont() {
 	for i := 0; i < N; i++ {
-		p[i] = ToMontgomeryWithKyber(int32(p[i]))
+		p[i] = ToMontgomery(int32(p[i]))
 	}
 }
 
 func (p *Poly) Add(q Poly) {
-	for i := 0; i < N; i++ {
-		p[i] += q[i]
-	}
-}
-
-func (p *Poly) AddWithOutBarrett(q Poly) {
 	for i := 0; i < N; i++ {
 		p[i] += q[i]
 	}
