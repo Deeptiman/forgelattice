@@ -1,10 +1,5 @@
 package kyber
 
-func montReduce(x int32) int16 {
-	//return int16(uint32(x-int32(int16(x*62209))*int32(Q)) >> 16)
-	return int16(x - int32(int16(x*62209))*int32(Q)>>16)
-}
-
 // MontgomeryMul ...
 //
 // Source: https://github.com/cloudflare/circl/blob/main/pke/kyber/internal/common/field.go#L4
@@ -39,8 +34,8 @@ func MontgomeryMul(a, b int32) int16 {
 	return int16(t32) // discarding the upper 16-bits leading zeros (nlz).
 }
 
-// ToMontgomeryWithKyber ...
-func ToMontgomeryWithKyber(x int32) int16 {
+// ToMontgomery ...
+func ToMontgomery(x int32) int16 {
 	// R² mod q = 1353 for Kyber.
 	return MontgomeryMul(x, R2modQ)
 }

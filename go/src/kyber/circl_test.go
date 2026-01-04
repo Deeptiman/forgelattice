@@ -65,7 +65,7 @@ func TestCIRCL_EncryptThenDecrypt(t *testing.T) {
 
 				for j := 0; j < 100; j++ {
 					var msg [32]byte
-					ct := make([]byte, p.Cfg.CiphertextSize)
+					ct := make([]byte, p.CiphertextSize)
 
 					_, _ = rand.Read(msg[:])
 					_, _ = rand.Read(coin[:])
@@ -118,7 +118,7 @@ func modQ32(x int32) int16 {
 
 func TestCIRCL_KyberToMontgomeryFull(t *testing.T) {
 	for x := -(1 << 15); x < 1<<15; x++ {
-		y := ToMontgomeryWithKyber(int32(x))
+		y := ToMontgomery(int32(x))
 		y1 := modQ32(int32(y))
 		y2 := modQ32(int32(x * 2285))
 		if y1 != y2 {
