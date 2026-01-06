@@ -1,11 +1,11 @@
-package kyber
+package poly
 
 type CompressParams struct {
 	A uint64
 	E uint
 }
 
-func compressedPolySize(d int) int {
+func CompressedPolySize(d int) int {
 	switch d {
 	case 4:
 		return 128
@@ -36,7 +36,7 @@ func (p *Poly) CompressD4(ct []byte) {
 	for i := 0; i < N/8; i++ {
 		var t [8]uint16
 		for j := 0; j < 8; j++ {
-			t[j] = CompressCoeff(p[8*i+j], 4)
+			t[j] = CompressCoeff(p.coeffs[8*i+j], 4)
 		}
 		ct[idx] = byte(t[0]) | byte(t[1]<<4)
 		ct[idx+1] = byte(t[2]) | byte(t[3]<<4)
@@ -55,14 +55,14 @@ func (p *Poly) DecompressD4(ct []byte) {
 		b2 := ct[idx+2]
 		b3 := ct[idx+3]
 
-		p[8*i] = DecompressCoeff(uint16(b0&0x0f), 4)
-		p[8*i+1] = DecompressCoeff(uint16(b0>>4), 4)
-		p[8*i+2] = DecompressCoeff(uint16(b1&0x0f), 4)
-		p[8*i+3] = DecompressCoeff(uint16(b1>>4), 4)
-		p[8*i+4] = DecompressCoeff(uint16(b2&0x0f), 4)
-		p[8*i+5] = DecompressCoeff(uint16(b2>>4), 4)
-		p[8*i+6] = DecompressCoeff(uint16(b3&0x0f), 4)
-		p[8*i+7] = DecompressCoeff(uint16(b3>>4), 4)
+		p.coeffs[8*i] = DecompressCoeff(uint16(b0&0x0f), 4)
+		p.coeffs[8*i+1] = DecompressCoeff(uint16(b0>>4), 4)
+		p.coeffs[8*i+2] = DecompressCoeff(uint16(b1&0x0f), 4)
+		p.coeffs[8*i+3] = DecompressCoeff(uint16(b1>>4), 4)
+		p.coeffs[8*i+4] = DecompressCoeff(uint16(b2&0x0f), 4)
+		p.coeffs[8*i+5] = DecompressCoeff(uint16(b2>>4), 4)
+		p.coeffs[8*i+6] = DecompressCoeff(uint16(b3&0x0f), 4)
+		p.coeffs[8*i+7] = DecompressCoeff(uint16(b3>>4), 4)
 
 		idx += 4
 	}
@@ -73,7 +73,7 @@ func (p *Poly) CompressD5(ct []byte) {
 	var t [8]uint16
 	for i := 0; i < N/8; i++ {
 		for j := 0; j < 8; j++ {
-			t[j] = uint16((((uint32(p[8*i+j])<<5)+uint32(Q)/2)*20159)>>26) & ((1 << 5) - 1)
+			t[j] = uint16((((uint32(p.coeffs[8*i+j])<<5)+uint32(Q)/2)*20159)>>26) & ((1 << 5) - 1)
 		}
 
 		ct[idx+0] = byte(t[0]) | byte(t[1]<<5)
@@ -100,7 +100,7 @@ func (p *Poly) DecompressD5(m []byte) {
 		t[7] = uint16(m[idx+4]) >> 3
 
 		for j := 0; j < 8; j++ {
-			p[8*i+j] = int16(((1 << 4) + uint32(t[j]&((1<<5)-1))*Q) >> 5)
+			p.coeffs[8*i+j] = int16(((1 << 4) + uint32(t[j]&((1<<5)-1))*Q) >> 5)
 		}
 
 		idx += 5
@@ -112,7 +112,7 @@ func (p *Poly) CompressD10(ct []byte) {
 	for i := 0; i < N/4; i++ {
 		var t [4]uint16
 		for j := 0; j < 4; j++ {
-			t[j] = CompressCoeff(p[4*i+j], 10)
+			t[j] = CompressCoeff(p.coeffs[4*i+j], 10)
 		}
 
 		ct[idx+0] = byte(t[0])
@@ -133,10 +133,10 @@ func (p *Poly) DecompressD10(ct []byte) {
 		t2 := (uint16(ct[idx+2]) >> 4) | (uint16(ct[idx+3]) << 4)
 		t3 := (uint16(ct[idx+3]) >> 6) | (uint16(ct[idx+4]) << 2)
 
-		p[4*i+0] = DecompressCoeff(t0&0x3ff, 10)
-		p[4*i+1] = DecompressCoeff(t1&0x3ff, 10)
-		p[4*i+2] = DecompressCoeff(t2&0x3ff, 10)
-		p[4*i+3] = DecompressCoeff(t3&0x3ff, 10)
+		p.coeffs[4*i+0] = DecompressCoeff(t0&0x3ff, 10)
+		p.coeffs[4*i+1] = DecompressCoeff(t1&0x3ff, 10)
+		p.coeffs[4*i+2] = DecompressCoeff(t2&0x3ff, 10)
+		p.coeffs[4*i+3] = DecompressCoeff(t3&0x3ff, 10)
 
 		idx += 5
 	}
@@ -147,7 +147,7 @@ func (p *Poly) CompressD11(ct []byte) {
 	var t [8]uint16
 	for i := 0; i < N/8; i++ {
 		for j := 0; j < 8; j++ {
-			t[j] = uint16((uint64((uint32(p[8*i+j])<<11)+uint32(Q)/2)*
+			t[j] = uint16((uint64((uint32(p.coeffs[8*i+j])<<11)+uint32(Q)/2)*
 				2580335)>>33) & ((1 << 11) - 1)
 		}
 
@@ -181,7 +181,7 @@ func (p *Poly) DecompressD11(ct []byte) {
 		t[7] = (uint16(ct[idx+9]) >> 5) | (uint16(ct[idx+10]) << 3)
 
 		for j := 0; j < 8; j++ {
-			p[8*i+j] = int16(((1 << 10) +
+			p.coeffs[8*i+j] = int16(((1 << 10) +
 				uint32(t[j]&((1<<11)-1))*Q) >> 11)
 		}
 
@@ -241,7 +241,7 @@ func (p *Poly) CompressMessage(m []byte) {
 	for i := 0; i < 32; i++ {
 		var b byte
 		for j := 0; j < 8; j++ {
-			t := p[8*i+j]
+			t := p.coeffs[8*i+j]
 			if t > low && t < high {
 				b |= 1 << j
 			}
@@ -254,7 +254,7 @@ func (p *Poly) DecompressMessage(m []byte) {
 	for i := 0; i < 32; i++ {
 		for j := 0; j < 8; j++ {
 			bit := (m[i] >> j) & 1
-			p[8*i+j] = -int16(bit) & ((int16(Q) + 1) / 2)
+			p.coeffs[8*i+j] = -int16(bit) & ((int16(Q) + 1) / 2)
 		}
 	}
 }
@@ -263,16 +263,16 @@ func (p *Poly) EncodeMessage(msg []byte) {
 	for i := 0; i < N; i++ {
 		bit := (msg[i>>3] >> (i & 7)) & 1
 		if bit == 1 {
-			p[i] = int16(Q / 2)
+			p.coeffs[i] = int16(Q / 2)
 		} else {
-			p[i] = 0
+			p.coeffs[i] = 0
 		}
 	}
 }
 
 func (p *Poly) DecodeMessage(msg [32]byte) {
 	for i := 0; i < N; i++ {
-		if p[i] > int16(Q/4) && p[i] < int16(3*Q/4) {
+		if p.coeffs[i] > int16(Q/4) && p.coeffs[i] < int16(3*Q/4) {
 			msg[i>>3] |= 1 << (i & 7)
 		}
 	}

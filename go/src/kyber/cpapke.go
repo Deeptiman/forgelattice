@@ -17,7 +17,7 @@ func (p *Params) GenerateKeyPair(seed []byte) (*PublicKey, *PrivateKey) {
 	seedA, sigma := ExpandSeed(seed[:])
 
 	copy(p.Pk.rho[:], seedA[:32])
-	p.GeneratePublicMatrixA(&p.Pk.rho) // A
+	p.GeneratePublicMatrixA(&p.Pk.rho, false) // A
 
 	for i := 0; i < p.K; i++ {
 		p.Sk.V[i].SampleNoise(sigma[:], uint8(i), p.Eta1) // S
@@ -64,7 +64,7 @@ func (p *Params) GenerateKeyPair(seed []byte) (*PublicKey, *PrivateKey) {
 	return &p.Pk, &p.Sk
 }
 
-func (p *Params) GeneratePublicMatrixA(rho *[32]byte) {
+func (p *Params) GeneratePublicMatrixA(rho *[32]byte, transpose bool) {
 	// 1. Gather 32-bytes random numbers (rho).
 	// 2. Shake it with 128-bit for each row & column and rho bytes.
 	// 3. Apply rejection sampler for each iteration to collect 12-bits of buffer.
@@ -72,7 +72,11 @@ func (p *Params) GeneratePublicMatrixA(rho *[32]byte) {
 	// 5. Complete the loop to generate KxK matrix uniform within [0 ... Q)
 	for x := 0; x < p.K; x++ {
 		for y := 0; y < p.K; y++ {
-			p.Pk.A[x][y].PolyUniform(rho, byte(y), byte(x))
+			if transpose {
+				p.Pk.A[x][y].PolyUniform(rho, byte(x), byte(y))
+			} else {
+				p.Pk.A[x][y].PolyUniform(rho, byte(y), byte(x))
+			}
 		}
 	}
 }
