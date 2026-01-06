@@ -124,7 +124,7 @@ func TestGeneratePublicMatrixA(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(fmt.Sprintf("Level=%v", testCase.L.String()), func(t *testing.T) {
 			p := WithKyberConfigs(testCase.L)
-			p.GeneratePublicMatrixA(&seedA, false)
+			p.generatePublicMatrixA(&seedA, false)
 			assert.Equal(t, p.pk.a, testCase.A)
 		})
 	}

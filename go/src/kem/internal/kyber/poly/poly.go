@@ -11,6 +11,7 @@ const (
 	Q          = common.Q
 	SeedSize   = common.SeedSize
 	MaxBitRate = common.MaxBitRate
+	R2modQ     = common.R2modQ
 )
 
 type Poly struct {
