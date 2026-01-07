@@ -28,10 +28,10 @@ func WithCoeffs(coeffs [N]int16) Poly {
 	return Poly{coeffs: coeffs}
 }
 
-func (p *Poly) Uniform(rho *[SeedSize]byte, x, y byte) {
+func (p *Poly) RejectionSampling(rho *[SeedSize]byte, x, y byte) {
 	shake := sha3.NewShake128()
-	_, _ = shake.Write(rho[:])
-	_, _ = shake.Write([]byte{x, y})
+	shake.Write(rho[:])
+	shake.Write([]byte{x, y})
 	buf := make([]byte, MaxBitRate) // max SHAKE rate block
 	i := 0
 
@@ -176,7 +176,7 @@ func (p *Poly) Sub(q Poly) {
 }
 
 func (p *Poly) Pack(buf []byte) {
-	for i := 0; i < 128; i++ {
+	for i := 0; i < N/2; i++ {
 		// Two coefficients, each guaranteed < 2^12
 		a := uint32(p.coeffs[2*i])
 		b := uint32(p.coeffs[2*i+1])
@@ -194,7 +194,7 @@ func (p *Poly) Pack(buf []byte) {
 }
 
 func (p *Poly) UnPack(buf []byte) {
-	for i := 0; i < 128; i++ {
+	for i := 0; i < N/2; i++ {
 		w := uint32(buf[3*i]) | uint32(buf[3*i+1])<<8 | uint32(buf[3*i+2])<<16
 		p.coeffs[2*i] = int16(w & 0xFFF)
 		p.coeffs[2*i+1] = int16((w >> 12) & 0xFFF)

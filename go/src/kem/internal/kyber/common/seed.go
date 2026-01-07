@@ -18,12 +18,12 @@ func GenerateRandomBytes(rand io.Reader) ([SeedSize]byte, error) {
 	return seed, nil
 }
 
-func ExpandSeed(seed []byte) (seedA [32]byte, seedS [32]byte) {
+func ExpandSeed(seed []byte) (seedA [SeedSize]byte, seedS [SeedSize]byte) {
 	var buf [64]byte
 	s := sha3.New512()
 	_, _ = s.Write(seed)
 	s.Read(buf[:])
-	copy(seedA[:], buf[:32])
-	copy(seedS[:], buf[32:])
+	copy(seedA[:], buf[:SeedSize])
+	copy(seedS[:], buf[SeedSize:])
 	return
 }
