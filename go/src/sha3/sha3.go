@@ -94,7 +94,7 @@ func (s *State) Read(out []byte) {
 }
 
 func (s *State) absorbBytes(input []byte) ([]byte, []byte) {
-	maxRate := s.rate
+	maxRate := s.rate - s.buffOffSets
 	if maxRate > len(input) {
 		maxRate = len(input)
 	}

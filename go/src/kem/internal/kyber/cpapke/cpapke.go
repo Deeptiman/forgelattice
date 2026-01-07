@@ -31,8 +31,7 @@ type Kyber struct {
 	sk *PrivateKey
 }
 
-func GenerateKeyPair(seed []byte, l Level) *Kyber {
-	p := WithKyberConfigs(l)
+func (p *Kyber) GenerateKeyPair(seed []byte) *Kyber {
 	seedA, sigma := common.ExpandSeed(seed[:])
 
 	copy(p.pk.rho[:], seedA[:32])
@@ -303,10 +302,6 @@ func (p *Kyber) Transpose() {
 	}
 }
 
-func (p *PrivateKey) Equals(q *PrivateKey) bool {
-	return false
-}
-
-func (p *PublicKey) Equals(q *PublicKey) bool {
-	return false
+func (p *Kyber) Scheme() string {
+	return p.Name
 }

@@ -6,33 +6,32 @@ import (
 )
 
 type API interface {
-	Name() string
+	Scheme() string
 	GenerateKeyPair(seed []byte) (*fips203.PublicKey, *fips203.PrivateKey)
-	Encapsulate(pk *fips203.PublicKey) (ct []byte, ss []byte)
-	Decapsulate(sk *fips203.PrivateKey, ct []byte) (ss []byte, err error)
+	Encapsulate(pk *fips203.PublicKey, seed []byte) (ct []byte, ss []byte)
+	Decapsulate(sk *fips203.PrivateKey, ct []byte) []byte
 }
 
 type KEM struct {
 	protocol *fips203.Protocol
-	level    cpapke.Level
 }
 
-func New(lvl cpapke.Level) API {
-	return &KEM{level: lvl, protocol: fips203.New(lvl)}
+func WithFIPS203(lvl cpapke.Level) API {
+	return &KEM{protocol: fips203.New(lvl)}
 }
 
 func (k *KEM) GenerateKeyPair(seed []byte) (*fips203.PublicKey, *fips203.PrivateKey) {
-	return k.protocol.GenerateKeyPair(seed[:], k.level)
+	return k.protocol.GenerateKeyPair(seed[:])
 }
 
-func (k *KEM) Encapsulate(pk *fips203.PublicKey) (ct []byte, ss []byte) {
-	return nil, nil
+func (k *KEM) Encapsulate(pk *fips203.PublicKey, seed []byte) (ct []byte, ss []byte) {
+	return k.protocol.Encapsulate(pk, seed)
 }
 
-func (k *KEM) Decapsulate(sk *fips203.PrivateKey, ct []byte) (ss []byte, err error) {
-	return nil, nil
+func (k *KEM) Decapsulate(sk *fips203.PrivateKey, ct []byte) []byte {
+	return k.protocol.Decapsulate(sk, ct)
 }
 
-func (k *KEM) Name() string {
-	return k.level.String()
+func (k *KEM) Scheme() string {
+	return k.protocol.Scheme()
 }

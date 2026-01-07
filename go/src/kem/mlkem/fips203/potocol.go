@@ -2,6 +2,7 @@ package fips203
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/common"
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/cpapke"
 	"github.com/Deeptiman/forgekey/go/src/sha3"
@@ -27,12 +28,12 @@ func New(lvl cpapke.Level) *Protocol {
 	return &Protocol{cpa: cpapke.WithKyberConfigs(lvl)}
 }
 
-func (f *Protocol) GenerateKeyPair(seed []byte, scheme cpapke.Level) (*PublicKey, *PrivateKey) {
+func (f *Protocol) GenerateKeyPair(seed []byte) (*PublicKey, *PrivateKey) {
 	var seed2 [33]byte
-	copy(seed2[:32], seed)
-	seed2[32] = byte(f.cpa.K)
+	copy(seed2[:common.SeedSize], seed)
+	seed2[common.SeedSize] = byte(f.cpa.K)
 
-	cpa := cpapke.GenerateKeyPair(seed2[:], scheme)
+	cpa := f.cpa.GenerateKeyPair(seed2[:])
 
 	pk := &PublicKey{}
 	sk := &PrivateKey{}
@@ -41,7 +42,7 @@ func (f *Protocol) GenerateKeyPair(seed []byte, scheme cpapke.Level) (*PublicKey
 	sk.pk = cpa.GetPublicKey()
 	sk.sk = cpa.GetPrivateKey()
 
-	copy(sk.z[:], seed[32:])
+	copy(sk.z[:], seed[common.SeedSize:])
 
 	ppk := cpa.PackPublicKey()
 	h := sha3.New256()
@@ -49,6 +50,59 @@ func (f *Protocol) GenerateKeyPair(seed []byte, scheme cpapke.Level) (*PublicKey
 	h.Read(sk.hpk[:])
 	copy(pk.hpk[:], sk.hpk[:])
 	return pk, sk
+}
+
+func (f *Protocol) Encapsulate(pk *PublicKey, seed []byte) (ct, ss []byte) {
+	var m [common.SeedSize]byte
+	copy(m[:], seed)
+
+	ct = make([]byte, f.cpa.CiphertextSize)
+	ss = make([]byte, common.SeedSize)
+
+	// (K', r) = G(m||H(pk))
+	var kr [64]byte
+	g := sha3.New512()
+	g.Write(m[:])
+	g.Write(pk.hpk[:])
+	g.Read(kr[:])
+
+	// c = KYBER.CPAPKE.Enc(pk, m, r)
+	f.cpa.Encrypt(ct, m[:], kr[common.SeedSize:])
+
+	// K := KDF(k'||H(c))
+	copy(ss, kr[:common.SeedSize])
+
+	return ct, ss
+}
+
+func (f *Protocol) Decapsulate(sk *PrivateKey, ct []byte) []byte {
+	var m [common.SeedSize]byte
+	f.cpa.Decrypt(m[:], ct)
+
+	// coins' = H(pk || m')
+	var kr2 [64]byte
+	g := sha3.New512()
+	g.Write(m[:])
+	g.Write(sk.hpk[:])
+	g.Read(kr2[:])
+
+	// Re-encrypt to verify if hash of publicKey matches with input ciphertext.
+	ct2 := make([]byte, f.cpa.CiphertextSize)
+	f.cpa.Encrypt(ct2, m[:], kr2[common.SeedSize:])
+
+	var ss [common.SeedSize]byte
+	ok := subtle.ConstantTimeCompare(ct, ct2)
+	if ok == 1 {
+		copy(ss[:], kr2[:common.SeedSize])
+	} else {
+		// secret fallback and will append arbitrary bits {KDF(zH(c))}
+		prf := sha3.NewShake256()
+		prf.Write(sk.z[:])
+		prf.Write(ct[:f.cpa.CiphertextSize])
+		prf.Read(ss[:])
+	}
+
+	return ss[:]
 }
 
 func (f *Protocol) UnPackPublicKey(keyBytes []byte) *PublicKey {
@@ -72,14 +126,14 @@ func (f *Protocol) UnPackPrivateKey(keyBytes []byte) *PrivateKey {
 	f.cpa.UnPackPublicKey(keyBytes[:f.cpa.PublicKeySize])
 	sk.pk = f.cpa.GetPublicKey()
 
-	var hpk [32]byte
+	var hpk [common.SeedSize]byte
 	h := sha3.New256()
 	h.Write(keyBytes[:f.cpa.PublicKeySize])
 	h.Read(hpk[:])
 	keyBytes = keyBytes[f.cpa.PublicKeySize:]
 
-	copy(sk.hpk[:], keyBytes[:32])
-	copy(sk.z[:], keyBytes[32:])
+	copy(sk.hpk[:], keyBytes[:common.SeedSize])
+	copy(sk.z[:], keyBytes[common.SeedSize:])
 
 	if !bytes.Equal(hpk[:], sk.hpk[:]) {
 		return nil
@@ -87,10 +141,6 @@ func (f *Protocol) UnPackPrivateKey(keyBytes []byte) *PrivateKey {
 	return &sk
 }
 
-func (p *PrivateKey) Equals(q *PrivateKey) bool {
-	return p.sk.Equals(q.sk)
-}
-
-func (p *PublicKey) Equals(q *PublicKey) bool {
-	return p.pk.Equals(q.pk)
+func (f *Protocol) Scheme() string {
+	return "ML-KEM-" + f.cpa.Scheme()
 }

@@ -1,7 +1,6 @@
 package cpapke
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/common"
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/poly"
@@ -208,17 +207,12 @@ func TestGenerateKeyPair(t *testing.T) {
 	for _, lvl := range []Level{Level512, Level768, Level1024} {
 		t.Run(fmt.Sprintf("Key-Pair=%s", lvl.String()), func(t *testing.T) {
 			seed, _ := common.GenerateRandomBytes(nil)
-			p := GenerateKeyPair(seed[:], lvl)
+			l := WithKyberConfigs(lvl)
+			p := l.GenerateKeyPair(seed[:])
 			privKey := p.sk
 			pubKey := p.pk
 			privateKeyBytes := p.PackPrivateKey()
 			publicKeyBytes := p.PackPublicKey()
-
-			fmt.Println("d = ", hex.EncodeToString(seed[:32]))
-			fmt.Println("z = ", hex.EncodeToString(seed[32:]))
-
-			fmt.Println("PrivateKey = ", ToString(privateKeyBytes))
-			fmt.Println("PublicKey = ", ToString(publicKeyBytes))
 
 			p.UnPackPrivateKey(privateKeyBytes)
 			p.UnPackPublicKey(publicKeyBytes)

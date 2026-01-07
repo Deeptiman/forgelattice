@@ -38,6 +38,7 @@ type Constants struct {
 
 type Params struct {
 	Constants
+	Name string
 }
 
 type Level int
@@ -61,14 +62,24 @@ func (l Level) String() string {
 	}
 }
 
+func ToLevel(algorithm string) Level {
+	switch algorithm {
+	case "ML-KEM-512":
+		return Level512
+	case "ML-KEM-768":
+		return Level768
+	case "ML-KEM-1024":
+		return Level1024
+	default:
+		panic("invalid kyber level")
+	}
+
+}
+
 func ParamsFor(l Level) Params {
 	switch l {
-	case Level512:
-		return Params{Constants: l.WithConstants()}
-	case Level768:
-		return Params{Constants: l.WithConstants()}
-	case Level1024:
-		return Params{Constants: l.WithConstants()}
+	case Level512, Level768, Level1024:
+		return Params{Constants: l.WithConstants(), Name: l.String()}
 	default:
 		panic("invalid kyber level")
 	}
