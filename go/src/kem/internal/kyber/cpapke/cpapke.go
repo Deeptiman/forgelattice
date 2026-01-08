@@ -204,9 +204,9 @@ func (p *Kyber) Encrypt(ct, pt, seed []byte) {
 	// 4. Compress (u, v) into ciphertext
 	size := poly.CompressedPolySize(p.Du)
 	for i := 0; i < p.K; i++ {
-		u[i].Compress(ct[size*i:], p.Du)
+		u[i].Compress(p.Du, ct[size*i:])
 	}
-	v.Compress(ct[p.K*size:], p.Dv)
+	v.Compress(p.Dv, ct[p.K*size:])
 }
 
 // Decrypt performs Kyber CPA-PKE decryption.
@@ -226,9 +226,9 @@ func (p *Kyber) Decrypt(pt []byte, ct []byte) {
 	size := poly.CompressedPolySize(p.Du)
 	u = make(poly.Vec, p.K)
 	for i := 0; i < p.K; i++ {
-		u[i].Decompress(ct[size*i:], p.Du)
+		u[i].Decompress(p.Du, ct[size*i:])
 	}
-	v.Decompress(ct[p.K*size:], p.Dv)
+	v.Decompress(p.Dv, ct[p.K*size:])
 
 	for i := 0; i < p.K; i++ {
 		u[i].NTT()
