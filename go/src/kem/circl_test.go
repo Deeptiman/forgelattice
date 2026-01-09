@@ -9,6 +9,7 @@ import (
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/common"
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/cpapke"
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/poly"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/reduction"
 	"github.com/Deeptiman/forgekey/go/src/kem/mlkem/fips203"
 	"github.com/Deeptiman/forgekey/go/src/kem/testdata"
 	"github.com/stretchr/testify/assert"
@@ -112,7 +113,7 @@ func TestCIRCL_KyberBarretTestVector(t *testing.T) {
 	for _, tc := range tests {
 		m := (tc.x * common.BarrettK16Mu) >> 26
 		assert.Equal(t, m, tc.expT)
-		red := poly.BarrettRedWith16bit(tc.x)
+		red := reduction.BarrettRedWith16bit(tc.x)
 		assert.Equal(t, red, int16(tc.expected))
 	}
 }
@@ -127,7 +128,7 @@ func modQ32(x int32) int16 {
 
 func TestCIRCL_KyberToMontgomeryFull(t *testing.T) {
 	for x := -(1 << 15); x < 1<<15; x++ {
-		y := poly.ToMontgomery(int32(x))
+		y := reduction.ToMontgomery(int32(x))
 		y1 := modQ32(int32(y))
 		y2 := modQ32(int32(x * 2285))
 		if y1 != y2 {
@@ -139,10 +140,10 @@ func TestCIRCL_KyberToMontgomeryFull(t *testing.T) {
 func TestCIRCL_KyberMontgomeryEncodeDecode(t *testing.T) {
 	for x := -(1 << 15); x <= (1 << 15); x++ {
 		// 1) Encode: x --> xR mod Q
-		enc := poly.MontgomeryMul(int32(x), common.R2modQ)
+		enc := reduction.MontgomeryMul(int32(x), common.R2modQ)
 
 		// 2) Decode: (xR) * R⁻¹ ≡ x mod Q
-		dec := poly.MontgomeryMul(int32(enc), 1)
+		dec := reduction.MontgomeryMul(int32(enc), 1)
 
 		red := modQ32(int32(x))
 		assert.Equal(t, dec, red)

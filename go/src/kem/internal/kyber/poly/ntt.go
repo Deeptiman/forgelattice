@@ -3,6 +3,7 @@ package poly
 import (
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/common"
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/math"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/reduction"
 	"github.com/Deeptiman/forgekey/go/src/prime"
 	"math/big"
 )
@@ -35,7 +36,7 @@ func (p *Poly) NTT() {
 
 				// Multiply the upper element by the twiddle factor using Montgomery
 				// multiplication (mod Q).
-				r := MontgomeryMul(zeta, int32(p.coeffs[j+subProblems]))
+				r := reduction.MontgomeryMul(zeta, int32(p.coeffs[j+subProblems]))
 
 				// Butterfly update:
 				//
@@ -77,8 +78,8 @@ func (p *Poly) InvNTT() {
 
 				// Ensure coefficients are in a safe centered range before arithmetic to prevent
 				// overflow.
-				p.coeffs[j] = Maybe(p.coeffs[j])
-				p.coeffs[j+subProblems] = Maybe(p.coeffs[j+subProblems])
+				p.coeffs[j] = reduction.Maybe(p.coeffs[j])
+				p.coeffs[j+subProblems] = reduction.Maybe(p.coeffs[j+subProblems])
 
 				// Inverse butterfly:
 				//
@@ -87,7 +88,7 @@ func (p *Poly) InvNTT() {
 				// This reverse the mixing performed in the forward NTT.
 				r := p.coeffs[j+subProblems] - p.coeffs[j]
 				p.coeffs[j] += p.coeffs[j+subProblems]
-				p.coeffs[j+subProblems] = MontgomeryMul(int32(z), int32(r))
+				p.coeffs[j+subProblems] = reduction.MontgomeryMul(int32(z), int32(r))
 			}
 		}
 	}
@@ -97,7 +98,7 @@ func (p *Poly) InvNTT() {
 	// The inverse NTT recovers the original coefficients scaled by N.
 	// Multiply each coefficient by N⁻¹ mod Q to obtain the result.
 	for i := 0; i < common.N; i++ {
-		p.coeffs[i] = MontgomeryMul(int32(nInv), int32(p.coeffs[i]))
+		p.coeffs[i] = reduction.MontgomeryMul(int32(nInv), int32(p.coeffs[i]))
 	}
 }
 
@@ -121,23 +122,23 @@ func (p *Poly) PointWiseMul(a, b *Poly) {
 		k++
 
 		// first pair: x² = +zeta
-		t0 := MontgomeryMul(int32(a.coeffs[i+1]), int32(b.coeffs[i+1]))
-		t0 = MontgomeryMul(int32(t0), int32(zeta))
-		t0 += MontgomeryMul(int32(a.coeffs[i]), int32(b.coeffs[i]))
+		t0 := reduction.MontgomeryMul(int32(a.coeffs[i+1]), int32(b.coeffs[i+1]))
+		t0 = reduction.MontgomeryMul(int32(t0), int32(zeta))
+		t0 += reduction.MontgomeryMul(int32(a.coeffs[i]), int32(b.coeffs[i]))
 
-		t1 := MontgomeryMul(int32(a.coeffs[i]), int32(b.coeffs[i+1]))
-		t1 += MontgomeryMul(int32(a.coeffs[i+1]), int32(b.coeffs[i]))
+		t1 := reduction.MontgomeryMul(int32(a.coeffs[i]), int32(b.coeffs[i+1]))
+		t1 += reduction.MontgomeryMul(int32(a.coeffs[i+1]), int32(b.coeffs[i]))
 
 		p.coeffs[i] += t0
 		p.coeffs[i+1] += t1
 
 		// second pair: x² = -zeta
-		t2 := MontgomeryMul(int32(a.coeffs[i+3]), int32(b.coeffs[i+3]))
-		t2 = -MontgomeryMul(int32(t2), int32(zeta))
-		t2 += MontgomeryMul(int32(a.coeffs[i+2]), int32(b.coeffs[i+2]))
+		t2 := reduction.MontgomeryMul(int32(a.coeffs[i+3]), int32(b.coeffs[i+3]))
+		t2 = -reduction.MontgomeryMul(int32(t2), int32(zeta))
+		t2 += reduction.MontgomeryMul(int32(a.coeffs[i+2]), int32(b.coeffs[i+2]))
 
-		t3 := MontgomeryMul(int32(a.coeffs[i+2]), int32(b.coeffs[i+3]))
-		t3 += MontgomeryMul(int32(a.coeffs[i+3]), int32(b.coeffs[i+2]))
+		t3 := reduction.MontgomeryMul(int32(a.coeffs[i+2]), int32(b.coeffs[i+3]))
+		t3 += reduction.MontgomeryMul(int32(a.coeffs[i+3]), int32(b.coeffs[i+2]))
 
 		p.coeffs[i+2] += t2
 		p.coeffs[i+3] += t3
@@ -169,7 +170,7 @@ func PrecomputeZetas() [128]int16 {
 		// Convert the root into Montgomery representation.
 		// Storing zetas in Montgomery form allows all NTT multiplications to use
 		// MontgomeryMul without additional conversions.
-		z[i] = MontgomeryMul(int32(v), common.R2modQ)
+		z[i] = reduction.MontgomeryMul(int32(v), common.R2modQ)
 	}
 	return z
 }

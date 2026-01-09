@@ -2,6 +2,7 @@ package poly
 
 import (
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/common"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/reduction"
 	"github.com/Deeptiman/forgekey/go/src/sha3"
 )
 
@@ -10,7 +11,6 @@ const (
 	Q          = common.Q
 	SeedSize   = common.SeedSize
 	MaxBitRate = common.MaxBitRate
-	R2modQ     = common.R2modQ
 )
 
 type Poly struct {
@@ -77,7 +77,7 @@ func (p *Poly) SampleNoise(seed []byte, noiseBuffer uint8, eta int) {
 
 func (p *Poly) Reduce() {
 	for i := 0; i < N; i++ {
-		p.coeffs[i] = Maybe(p.coeffs[i])
+		p.coeffs[i] = reduction.Maybe(p.coeffs[i])
 	}
 }
 
@@ -89,7 +89,7 @@ func (p *Poly) Zero() {
 
 func (p *Poly) ToMont() {
 	for i := 0; i < N; i++ {
-		p.coeffs[i] = ToMontgomery(int32(p.coeffs[i]))
+		p.coeffs[i] = reduction.ToMontgomery(int32(p.coeffs[i]))
 	}
 }
 
