@@ -84,7 +84,7 @@ func (p *Kyber) GenerateKeyPair(seed []byte) *Kyber {
 		publicMatrix := p.pk.a[i]
 		secretVector := p.sk.s
 		for j := 0; j < p.K; j++ {
-			t.MulConvolution(&publicMatrix[j], &secretVector[j])
+			t.PointWiseMul(&publicMatrix[j], &secretVector[j])
 		}
 		p.pk.t[i].Add(t)
 		p.pk.t[i].ToMont() // Do montgomery reduction to every computed (t' = A * s).
@@ -166,7 +166,7 @@ func (p *Kyber) Encrypt(ct, pt, seed []byte) {
 	for i := 0; i < p.K; i++ {
 		var tmp poly.Poly
 		for j := 0; j < p.K; j++ {
-			tmp.MulConvolution(&p.pk.a[i][j], &rh[j])
+			tmp.PointWiseMul(&p.pk.a[i][j], &rh[j])
 		}
 		u[i].Add(tmp)
 	}
@@ -186,7 +186,7 @@ func (p *Kyber) Encrypt(ct, pt, seed []byte) {
 	// 3. Compute v = t * r + e2 + m
 	var v, m, tmp poly.Poly
 	for i := 0; i < p.K; i++ {
-		tmp.MulConvolution(&p.pk.t[i], &rh[i])
+		tmp.PointWiseMul(&p.pk.t[i], &rh[i])
 	}
 	v.Add(tmp)
 	v.Reduce()
@@ -236,7 +236,7 @@ func (p *Kyber) Decrypt(pt []byte, ct []byte) {
 
 	var tmp poly.Poly
 	for i := 0; i < p.K; i++ {
-		tmp.MulConvolution(&p.sk.s[i], &u[i])
+		tmp.PointWiseMul(&p.sk.s[i], &u[i])
 	}
 	m.Add(tmp)
 	m.Reduce()

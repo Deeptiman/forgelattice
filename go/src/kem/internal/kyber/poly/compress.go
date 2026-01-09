@@ -569,10 +569,56 @@ func (p *Poly) DecompressMessage(m []byte) {
 			//	bit = 0 --> coefficient = 0
 			//	bit = 1 --> coefficient = (Q+1)/2 (the modular representative of Q/2).
 			//
-			// The coefficient is stored using centered modular representation, so this value
+			// The coefficient is stored using centered modular (+-Q/4) representation, so this value
 			// may later be represented as a negative int16 after subsequent arithmetic, even
 			// though it is assigned positively on the threshold range.
 			p.coeffs[8*i+j] = -int16(bit) & ((int16(Q) + 1) / 2)
 		}
+	}
+}
+
+// Pack serializes polynomial coefficients into a compact byte array.
+//
+// Each coefficient is guaranteed 12-bits (0 <= coeff < 2¹²).
+// Two coefficients are packed into a single 24-bit word:
+//
+//	w = [ b (12 bits) | a (12 bits) ]
+//
+// The 24-bit word is written in little-endian order as 3 bytes.
+func (p *Poly) Pack(buf []byte) {
+	for i := 0; i < N/2; i++ {
+		// Two coefficients, each guaranteed < 2^12
+		a := uint32(p.coeffs[2*i])
+		b := uint32(p.coeffs[2*i+1])
+
+		// Combine into one 24-bit word:
+		// bits 0...12 = a
+		// bits 12...23 = b
+		w := a | (b << 12)
+
+		// Store the 24-bit word in little-endian order.
+		buf[3*i] = byte(w)
+		buf[3*i+1] = byte(w >> 8)
+		buf[3*i+2] = byte(w >> 16)
+	}
+}
+
+// UnPack deserializes polynomial coefficients from a packed byte array.
+//
+// Each group of 3 bytes is interpreted as a 24-bit little-endian word, which
+// contains two 12-bit coefficients.
+//
+//	bits 0....11 --> coeffs[2*i]
+//	bits 12...23 --> coeffs[2*i+1]
+func (p *Poly) UnPack(buf []byte) {
+	for i := 0; i < N/2; i++ {
+		// Load 24-bit word from 3 bytes in little-endian order.
+		w := uint32(buf[3*i]) |
+			uint32(buf[3*i+1])<<8 |
+			uint32(buf[3*i+2])<<16
+
+		// Extract the two 12-bit coefficients.
+		p.coeffs[2*i] = int16(w & 0xFFF)
+		p.coeffs[2*i+1] = int16((w >> 12) & 0xFFF)
 	}
 }

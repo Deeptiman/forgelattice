@@ -40,7 +40,7 @@ func TestCIRCL_CompressMessage(t *testing.T) {
 	var m [32]byte
 	ok := true
 	for i := 0; i < int(common.Q); i++ {
-		p.WithCoeffs(int16(i), 0)
+		p = poly.WithCoeffs([common.N]int16{int16(i)})
 		p.CompressMessage(m[:])
 		want := byte(0)
 		if i >= 833 && i < 2497 {
