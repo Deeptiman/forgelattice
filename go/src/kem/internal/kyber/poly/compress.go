@@ -311,87 +311,232 @@ func (p *Poly) Decompress(bitWidth int, ct []byte) {
 	switch bitWidth {
 	case 4:
 		const bitWidth = 4
-		const mask = (1 << bitWidth) - 1
+		const mask = (1 << bitWidth) - 1 // mask = 0x0f
 
+		// For bitWidth = 4, each coefficient is stored in 4-bits.
+		// 8 coefficients x 4 bits = 32 bits = 4 bytes.
+		//
+		// Each loop iteration prepares 4-bytes block at a time.
 		for i := 0; i < N/8; i++ {
-			// Load 4-bytes = 32-bits
+			// Load 4 bytes from the ciphertext and assemble them into a 32-bit little-endian word.
+			//
+			// This word represents a contiguous bitstream of 8 packed 4-bit coefficients:
+			//
+			// w = [ t7 | t6 | t5 | t4 | t3 | t2 | t1 | t0 ]
+			//		4b	 4b	  4b   4b	4b	 4b	  4b   4b
+			//
+			// where t0 occupies the least significant 4 bits.
 			w := uint32(ct[idx]) |
 				uint32(ct[idx+1])<<8 |
 				uint32(ct[idx+2])<<16 |
 				uint32(ct[idx+3])<<24
 
-			// Extract 8 coefficients
+			// Extract and decompress the 8 coefficients from the 32-bit word.
 			for j := 0; j < 8; j++ {
-				t := (w >> (bitWidth * j)) & mask
+
+				// Step 1: Extract the j-th 4-bit value.
+				//
+				// - Shift right by (4 * bitWidth) to align the desired coefficient to the least
+				// significant bits.
+				// - Mask with 0x0f to keep exactly 4-bits.
+				//
+				// This recovers the compressed value:
+				//
+				// t ∈ {0, 1, ..... 15}
+				//
+				// which represents the index of a quantization bucket.
+				t := (w >> (j * bitWidth)) & mask
+
+				// Step-2: Decompress (dequantize) the 4-bit value back into Z_Q.
+				//
+				// This computes:
+				//
+				//   round(t * Q / 16)
+				//
+				// - Multiply by Q to scale back into the modulus range.
+				// - Add mask (= 2^bitWidth - 1) to implement rounding instead of truncation
+				// toward zero.
+				// - Shift right by bitWidth (divide by 16)
+				//
+				// The result is a representative value for the entire quantization interval
+				// corresponding to t.
 				p.coeffs[8*i+j] = int16((uint32(t)*Q + mask) >> bitWidth)
 			}
+
+			// Advance the ciphertext index by 4-bytes (32 bits)
 			idx += 4
 		}
-
 	case 5:
 		const bitWidth = 5
-		const mask = (1 << bitWidth) - 1
+		const mask = (1 << bitWidth) - 1 // mask = 0x1f
 
+		// For bitWidth = 5, each coefficient is stored in 5-bits.
+		// 8 coefficients x 5 bits = 40 bits = 5 bytes.
+		//
+		// Each loop iteration prepares 5-bytes block at a time.
 		for i := 0; i < N/8; i++ {
-			// Load 5-bytes = 40-bits
+			// Load 4 bytes from the ciphertext and assemble them into a 40-bit little-endian word.
+			//
+			// This word represents a contiguous bitstream of 8 packed 5-bit coefficients:
+			//
+			// w = [t7 | t6 | t5 | t4 | t3 | t2 | t1 | t0 ]
+			//		5b	 5b	  5b   5b	5b	 5b	  5b   5b
+			//
+			// where t0 occupies the least significant 5 bits.
 			w := uint64(ct[idx]) |
 				uint64(ct[idx+1])<<8 |
 				uint64(ct[idx+2])<<16 |
 				uint64(ct[idx+3])<<24 |
 				uint64(ct[idx+4])<<32
 
-			// Extract 8 coefficients
+			// Extract and decompress the 8 coefficients from the 40-bit word.
 			for j := 0; j < 8; j++ {
-				t := (w >> (bitWidth * j)) & mask
+
+				// Step 1: Extract the j-th 5-bit value.
+				//
+				// - Shift right by (5 * bitWidth) to align the desired coefficient to the least
+				// significant bits.
+				// - Mask with 0x0f to keep exactly 5-bits.
+				//
+				// This recovers the compressed value:
+				//
+				// t ∈ {0, 1, ..... 31}
+				//
+				// which represents the index of a quantization bucket.
+				t := (w >> (j * bitWidth)) & mask
+
+				// Step-2: Decompress (dequantize) the 5-bit value back into Z_Q.
+				//
+				// This computes:
+				//
+				//   round(t * Q / 32)
+				//
+				// - Multiply by Q to scale back into the modulus range.
+				// - Add mask (= 2^bitWidth - 1) to implement rounding instead of truncation
+				// toward zero.
+				// - Shift right by bitWidth (divide by 32)
+				//
+				// The result is a representative value for the entire quantization interval
+				// corresponding to t.
 				p.coeffs[8*i+j] = int16((uint32(t)*Q + mask) >> bitWidth)
 			}
+
+			// Advance the ciphertext index by 5-bytes (40 bits)
 			idx += 5
 		}
 
 	case 10:
+		const bitWidth = 10
+		const mask = (1 << bitWidth) - 1
+
 		for i := 0; i < N/4; i++ {
-			t0 := uint16(ct[idx+0]) | (uint16(ct[idx+1]) << 8)
-			t1 := (uint16(ct[idx+1]) >> 2) | (uint16(ct[idx+2]) << 6)
-			t2 := (uint16(ct[idx+2]) >> 4) | (uint16(ct[idx+3]) << 4)
-			t3 := (uint16(ct[idx+3]) >> 6) | (uint16(ct[idx+4]) << 2)
+			w := uint64(ct[idx]) |
+				uint64(ct[idx+1])<<8 |
+				uint64(ct[idx+2])<<16 |
+				uint64(ct[idx+3])<<24 |
+				uint64(ct[idx+4])<<32
 
-			p.coeffs[4*i+0] = int16((uint32(t0&0x3ff)*Q + ((1 << bitWidth) - 1)) >> bitWidth)
-			p.coeffs[4*i+1] = int16((uint32(t1&0x3ff)*Q + ((1 << bitWidth) - 1)) >> bitWidth)
-			p.coeffs[4*i+2] = int16((uint32(t2&0x3ff)*Q + ((1 << bitWidth) - 1)) >> bitWidth)
-			p.coeffs[4*i+3] = int16((uint32(t3&0x3ff)*Q + ((1 << bitWidth) - 1)) >> bitWidth)
+			// Extract and decompress the 8 coefficients from the 40-bit word.
+			for j := 0; j < 4; j++ {
+				// Step 1: Extract the j-th 5-bit value.
+				//
+				// - Shift right by (5 * bitWidth) to align the desired coefficient to the least
+				// significant bits.
+				// - Mask with 0x0f to keep exactly 5-bits.
+				//
+				// This recovers the compressed value:
+				//
+				// t ∈ {0, 1, ..... 31}
+				//
+				// which represents the index of a quantization bucket.
+				t := (w >> (j * bitWidth)) & mask
 
+				// Step-2: Decompress (dequantize) the 5-bit value back into Z_Q.
+				//
+				// This computes:
+				//
+				//   round(t * Q / 32)
+				//
+				// - Multiply by Q to scale back into the modulus range.
+				// - Add mask (= 2^bitWidth - 1) to implement rounding instead of truncation
+				// toward zero.
+				// - Shift right by bitWidth (divide by 32)
+				//
+				// The result is a representative value for the entire quantization interval
+				// corresponding to t.
+				p.coeffs[4*i+j] = int16((uint32(t)*Q + mask) >> bitWidth)
+			}
+
+			// Advance the ciphertext index by 5-bytes (40 bits)
 			idx += 5
 		}
 	case 11:
 		const bitWidth = 11
-		const mask = (1 << bitWidth) - 1
+		const mask = (1 << bitWidth) - 1 // 0x7ff
 
-		bitpos := 0
+		// Process all N coefficients
 		for i := 0; i < N; i++ {
-			shift := bitpos & 7
-			bytePos := bitpos >> 3
-			t := uint32(ct[bytePos]) >> shift
-			t |= uint32(ct[bytePos+1]) << (8 - shift)
-			t |= uint32(ct[bytePos+2]) << (16 - shift)
+			// Move the bitPos by 3-bits because 11 mod 8 = 3, the starting bit offset advances by 3 bits each time.
+			bytePos := idx >> 3
+			shift := idx & 7
 
-			t &= mask // mask = (1<<11)-1
+			// Load a 24-bit window (3 bytes) to guarantee we can extract 11 contiguous bits regardless of alignment.
+			w := uint32(ct[bytePos]) |
+				uint32(ct[bytePos+1])<<8 |
+				uint32(ct[bytePos+2])<<16
 
-			p.coeffs[i] = int16((t*Q + mask) >> bitWidth)
+			// Step 1: Align the desired 11-bit field to the LSBs
+			// Step 2: Mask to keep exactly 11 bits
+			t := (w >> shift) & mask
 
-			bitpos += bitWidth
+			// Step 3: Decompress (dequantize) back into Z_Q
+			//
+			// Computes:
+			//   round(t * Q / 2^11)
+			//
+			// - Multiply by Q to scale back to modulus range
+			// - Add mask (= 2^11 − 1) to round instead of truncate towards zero.
+			// - Shift right by bitWidth (divide by 2048)
+			p.coeffs[i] = int16((uint32(t)*Q + mask) >> bitWidth)
+
+			// Advance by one 11-bit coefficient
+			idx += bitWidth
 		}
 	}
 }
 
+// CompressMessage extracts a 256-bit message from a polynomial by thresholding each coefficient into
+// a single bit.
 func (p *Poly) CompressMessage(m []byte) {
+	// q is the modulus Q represented as int16 for coefficient comparison.
 	q := int16(Q)
+
+	// Define decision thresholds that split Z_Q into regions.
+	//
+	// low = Q / 4
+	// high = 3Q / 4
+	//
+	// These boundaries are chosen so that values near 0 or Q decode to bit 0, and values near
+	// Q/2 decode to bit 1 with tolerance for noise. And (+2) added to round-to-nearest when dividing.
 	low := (q + 2) / 4
 	high := (3*q + 2) / 4
-	for i := 0; i < 32; i++ {
-		var b byte
+
+	// Process 256-coefficients in block of 8.
+	// Each block produces one output byte (8 message bits).
+	for i := 0; i < N/8; i++ {
+		var b byte // byte accumulator for each message byte.
 		for j := 0; j < 8; j++ {
+			// Read the polynomial coefficient corresponding to the j-th bit of the current message byte.
 			t := p.coeffs[8*i+j]
+			// Decision rule:
+			//
+			// If the coefficient lies in the middle half of Z_Q, between Q/4 and 3Q/4, we decode it
+			// as bit = 1.
+			//
+			// Otherwise (near 0 or near Q), decode as bit = 0.
 			if t > low && t < high {
+				//0 -------- Q/4 ---- Q/2 ---- 3Q/4 -------- Q
+				//|    0     |   1    |   1    |     0       |
 				b |= 1 << j
 			}
 			m[i] = b
@@ -399,10 +544,34 @@ func (p *Poly) CompressMessage(m []byte) {
 	}
 }
 
+// DecompressMessage embeds a 256-bit message into a polynomial by mapping each bit to either 0 or +-(Q+1)/2
+// in centered modular representation.
 func (p *Poly) DecompressMessage(m []byte) {
-	for i := 0; i < 32; i++ {
+	// Process the message in blocks of 8 bits (one byte).
+	// Each bit is expanded into one polynomial coefficients.
+	for i := 0; i < N/8; i++ {
 		for j := 0; j < 8; j++ {
+			// Extract the j-th bit from the i-th message byte.
+			// bit ∈ {0, 1}
 			bit := (m[i] >> j) & 1
+
+			// Map the message bit into Z_Q using centered representation.
+			//
+			// If bit == 0:
+			//	-int16(0) = 0
+			// 0 & ((Q+1)/2) = 0
+			//
+			// If bit == 1:
+			//  -int16(1) == -1 (all bit set)
+			//	 --> [16] 1s (1111 1111 1111 1111) and if MSB is 1 then sign bit is negative.
+			//
+			// Encode the message bit as a polynomial coefficient.
+			//	bit = 0 --> coefficient = 0
+			//	bit = 1 --> coefficient = (Q+1)/2 (the modular representative of Q/2).
+			//
+			// The coefficient is stored using centered modular representation, so this value
+			// may later be represented as a negative int16 after subsequent arithmetic, even
+			// though it is assigned positively on the threshold range.
 			p.coeffs[8*i+j] = -int16(bit) & ((int16(Q) + 1) / 2)
 		}
 	}
