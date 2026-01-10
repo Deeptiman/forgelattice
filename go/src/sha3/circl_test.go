@@ -1,3 +1,10 @@
+// This test file is adapted from the CIRCL (Cloudflare) SHA-3 / Keccak test vectors and is
+// used to standardize and validate this SHA-3 implementation against known-good reference outputs.
+//
+// Source:
+// - https://github.com/cloudflare/circl/blob/main/internal/sha3/sha3_test.go
+//
+// The Keccak Known Answer Tests (KATs) are stored in compressed form under testdata/keccakKats.json.deflate.
 package sha3
 
 import (
@@ -113,9 +120,8 @@ func TestKeccakKats(t *testing.T) {
 	}
 
 	for algo, function := range testDigests {
-		d := function()
 		for _, kat := range katSet.Kats[algo] {
-			d.Reset()
+			d := function()
 			in, err := hex.DecodeString(kat.Message)
 			if err != nil {
 				t.Errorf("error decoding KAT: %s", err)
