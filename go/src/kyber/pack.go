@@ -3,7 +3,6 @@ package kyber
 import (
 	"crypto/sha3"
 	"encoding/hex"
-	"strings"
 )
 
 func (p *Params) PackPrivateKey() []byte {
@@ -28,21 +27,14 @@ func (p *Params) PackPrivateKey() []byte {
 	return keyBytes
 }
 
-func (p *Params) UnPackPrivateKey(privateKeyBytes []byte) *PrivateKey {
-	keyBytes, _ := hex.DecodeString(strings.TrimPrefix(hex.EncodeToString(privateKeyBytes), "0x"))
-
-	var pk PrivateKey
-	pk.V = make(PolyVec, p.K)
+func (p *Params) UnPackPrivateKey(keyBytes []byte) *PrivateKey {
+	p.Sk.V = make(PolyVec, p.K)
 	offset := 0
 	for i := 0; i < p.K; i++ {
-		pk.V[i].UnPack(keyBytes[offset:])
+		p.Sk.V[i].UnPack(keyBytes[offset:])
 		offset += PolySize
 	}
-	offset += p.PublicKeySize
-	offset += 32
-
-	p.PrivateKeyNormalize()
-	return &pk
+	return &p.Sk
 }
 
 func (p *Params) PackPublicKey() []byte {
@@ -54,19 +46,25 @@ func (p *Params) PackPublicKey() []byte {
 	return keyBytes
 }
 
-func (p *Params) UnPackPublicKey(publicKeyBytes []byte) *PublicKey {
-	keyBytes, _ := hex.DecodeString(strings.TrimPrefix(hex.EncodeToString(publicKeyBytes), "0x"))
+func (p *Params) PackPublicKeyKEM(keyBytes []byte) []byte {
+	for i := 0; i < p.K; i++ {
+		p.Pk.T[i].Pack(keyBytes[PolySize*i:])
+	}
+	copy(keyBytes[p.K*PolySize:], p.Pk.rho[:])
+	return keyBytes
+}
 
-	var pk PublicKey
-	pk.T = make(PolyVec, p.K)
+func (p *Params) UnPackPublicKey(keyBytes []byte) *PublicKey {
+	p.Pk.T = make(PolyVec, p.K)
 	offset := 0
 	for i := 0; i < p.K; i++ {
-		pk.T[i].UnPack(keyBytes[offset:])
+		p.Pk.T[i].UnPack(keyBytes[offset:])
 		offset += PolySize
 	}
-	copy(pk.rho[:], keyBytes[p.K*PolySize:])
 	p.PublicKeyNormalize()
-	return &pk
+	copy(p.Pk.rho[:], keyBytes[p.K*PolySize:])
+	p.GeneratePublicMatrixA(&p.Pk.rho, true)
+	return &p.Pk
 }
 
 func (p *Params) PrivateKeyNormalize() {
