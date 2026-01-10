@@ -177,8 +177,8 @@ func BenchmarkShake256_1MiB(b *testing.B) { benchmarkShake(b, NewShake256(), 102
 // with no input data.
 func BenchmarkPermutationFunction(b *testing.B) {
 	b.SetBytes(int64(200))
-	var lanes [25]uint64
+	var lanes keccak.Lanes
 	for i := 0; i < b.N; i++ {
-		keccak.PermuteWith1600(&lanes)
+		lanes.PermuteWith1600()
 	}
 }
