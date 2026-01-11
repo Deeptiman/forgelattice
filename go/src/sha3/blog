@@ -1,0 +1,159 @@
+ Understanding FIPS 202: Keccak, SHA-3 and SHAKE Explained
+
+ Cryptographic hash functions are foundational to the construction of practical cryptographic systems.
+ A hash function transforms input data of arbitrary length into a fixed-length message digest that is
+ easy to compute but infeasible to invert. Once a digest is produced, recovering the original message is
+ computationally infeasible. Hash functions are used widely across cryptographic applications,
+ including verifying data integrity, authenticating messages, generating deterministic randomness,
+ and deriving keys for secure communication protocols.
+
+ For many years, the SHA-2 family served as the primary cryptographic hash standard. However, advances
+ in cryptanalysis and the growing security requirements for more flexible constructions led to the
+ development of a new standard. In 2015, NIST published FIPS 202, which defined the SHA-3 family of
+ hash functions and introduced a new class of primitives known as extendable-output functions (XOFs).
+
+ Unlike earlier designs based on compression functions, SHA-3 is built on a general framework called the
+ sponge construction. The sponge absorbs input data into a large internal state and later squeezes out
+ output bytes as needed. This design allows the same construction to support both fixed-length hashes (such
+ as SHA-3-256) and variable-length outputs (such as SHAKE128 and SHAKE256).
+
+ This article provides a detailed design of the FIPS 202 standard. We begin by explaining the sponge
+ construction and its security properties, then examine how SHA-3 achieves diffusion and irreversibility
+ through its internal permutation. Along the way, we clarify which components of the design are reversible
+ in isolation and why the overall construction remains one-way. Finally, we highlight why SHA-3 and SHAKE
+ are particularly well-suited for modern cryptographic systems, including post-quantum cryptography.
+
+
+ What is Cryptographic Hash Function?
+ A cryptographic hash function is a deterministic algorithm that maps input data of arbitrary length to a
+ fixed-length output known as a message digest. The foundational mechanism of a secure hash function is
+ that even small change in the input such as flipping a single bit produces a completely different output,
+ a behaviour commonly referred to as the avalanche effect.
+
+ Despite the sensitivity, the function remains fully deterministic, for a given input the resulting digest
+ is always the same. This combination of determinism and strong diffusion allows hash functions to act as
+ reliable fingerprint for data.
+
+ Unlike general-purpose checksum, cryptographic hash functions are built to satisfy specific security
+ properties. A secure hash function must be computationally infeasible to invert, meaning the given a
+ hash output, it should be impractical to recover the original input. It must also resist collision, where
+ two distinct input produce the same digest, and second-preimage attacks, where an attacker attempts to
+ find a different input with the same hash as a known message.
+
+ - Preimage resistance: Given a hash value h, it is infeasible to find any message m such that hash(m) = h.
+ - Second-preimage resistance: Given a message m, it is infeasible to find a different message m2, such
+ that hash(m1) = hash(m2).
+ - Collision resistance: It is infeasible to find any two distinct message m1 and m2, such that
+ hash(m1) = hash(m2).
+
+ These security properties make hash functions suitable for security-critical applications where integrity,
+ authenticity and unpredictability are required.
+
+ Extendable-Output Functions (XOFs)
+ An extendable-output function generalizes the concept of a hash function by allowing the output length to
+ be chosen arbitrarily. Instead of producing a fixed-size digest, an XOF can generate as many output
+ bytes as required.
+
+ SHAKE128 and SHAKE256, defined in FIPS 202, are examples of XOFs. They are useful for applications
+ that require deterministic pseudorandom output, such as key derivation, masking, and
+ post-quantum cryptography schemes.
+
+ XOFs are a natural design mechanism for the sponge construction, which cleanly separates the absorption of
+ input from the generation of output. In post-quantum cryptography, hash functions, especially XOFs,
+ are used extensively to expand small seeds into large pseudorandom structures.
+
+ SHA-2 Overview (FIPS 180-4)
+ The SHA-2 family of hash functions has long served as the primary cryptographic hashing standard in
+ modern security systems. It includes widely deployed algorithms such as SHA-224, SHA-256, SHA-384,
+ and SHA-512. The SHA-2 family is standardized by NIST in FIPS 180-4 (Secure Hash Standard).
+
+ SHA-2 hash functions are built using the Merkle-Damgård construction, in which input data is processed in fixed-size blocks by a compression function. Each block updates an internal chaining state, and after the
+ final block is processed, the resulting state is output as the message digest. The Merkle-Damgård
+ construction has been extensively analyzed and has proven suitable for the security goals of the SHA-2
+ family.
+
+ This article does not cover the internal compression function, message schedules, or execution flow
+ of the SHA-2 family. Readers interested in the detailed design and implementation of SHA-2 are encouraged
+ to refer to the official NIST specification:
+
+ - NIST FIPS 180-4 - Secure Hash Standard
+   https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.180-4.pdf
+
+
+ SHA-3 and Sponge Construction
+ SHA-3 is the latest member of the Secure Hash Algorithm family, standardized by NIST in FIPS 202.
+ Unlike SHA-2, which evolved from earlier hash designs, SHA-3 is built on a completely different internal
+ model.
+
+ At a high level, SHA-3 provides the same essential security guarantees as earlier hash functions:
+ preimage-resistance, collision resistance, and strong diffusion, while also introducing a more flexible
+ framework for constructing cryptographic digests. Instead of processing input through a chain
+ of compression steps, SHA-3 operates on a large internal state and repeatedly applies a single
+ cryptographic permutation. This design approach is known as the sponge construction.
+
+ In the Sponge model, input data is absorbed into the internal state in a fixed-size block, and
+ output data is later squeezed from the same state. The same underlying construction supports both
+ fixed-length hash functions (such as SHA-3-256) and extendable-output functions
+ (such as SHAKE128 and SHAKE256). This allows SHA-3 to absorb arbitrary amounts of input data and produce
+ output of either fixed or variable length, depending on the chosen function.
+
+
+ Merkle–Damgård vs Sponge Construction
+ To understand why SHA-3 behaves differently from SHA-2, it is useful to compare the underlying
+ constructions that define how input data is processed and how output is produced.
+
+ Merkle–Damgård Construction (SHA-2)
+ The Merkle–Damgård construction processes the input data sequentially in fixed-size blocks using a
+ compression function. Each block is combined with an internal chaining value to produce a new chaining
+ value, which is then fed into the next level. After the final block is processed, the resulting chaining
+ value becomes the hash digest.
+
+ This approach is efficient and well understood, but it's tightly coupled to the hash function to a fixed
+ output size and introduces structural properties such as length-extension behaviour. As a result,
+ certain features like variable length or domain separation must be implemented outside the core
+ construction.
+
+ Sponge Construction (SHA-3)
+ The Sponge construction replaces the compression pipeline with a large internal state that is reused
+ throughout the computation. Instead of compressing blocks into a chaining value, the sponge alternates
+ between two phases:
+
+ - Absorbing: input blocks are mixed into the internal state.
+ - Squeezing: output blocks are extracted from the same state.
+
+ The internal state is divided into two logical regions:
+ - Rate: the portion of the state that interacts with input and output
+ - Capacity: the portion of the state preserve for security and never directly exposed.
+
+ During absorption, the input data is XORed with the rate portion of the state, then permuted.
+ During squeezing, output bytes are read from the rate portion, with additional permutation applied as
+ needed.
+
+ This Sponge design model changes the behaviour of how data flows through a hash function.
+ Instead of chaining states forward, the sponge continuously evolves a single state, with security
+ determined by how much of that state remains hidden.
+
+
+
+
+===========================================================================
+
+  What is a hash function?
+
+  What is SHA hash function family?
+
+  What is SHA-3 and security ?
+
+  What is extendable-output function (XOF)?
+
+  Inside KECCAK-p Permutations
+
+  - 5x5 lane matrix
+  - State array
+  - Step mappings
+  - Rate vs Capacity
+  - Absorb & Squeeze
+  -
+
+  Sponge construction
+
