@@ -133,6 +133,97 @@
  Instead of chaining states forward, the sponge continuously evolves a single state, with security
  determined by how much of that state remains hidden.
 
+ Keccak-p Permutations: The Engine Behind SHA-3
+ At the core of SHA-3 lies a single cryptographic primitive: a permutation applied repeatedly to a fixed-
+ size internal state. This family of permutation is known as Keccak-p[b, nr], where b denotes the width of
+ the state in bits and nr denotes the number of rounds applied. Valid state width includes b ∈ {25, 50, 100, 200,
+ 400, 800, 1600}, with Keccak-f[1600] -- a 1600 bit permutation with 24-rounds being the variant standardized
+ in FIPS 202. All diffusion, mixing and security properties of SHA-3 ultimately rely on repeated permutation
+ of Keccak-f applied across many rounds.
+
+ Keccak permutation is bijective transformation: it deterministically rearranges and mixes bits in a reversible
+ manner. The permutation can be inverted with the given full internal state. At first glance, this may
+ appear counterintuitive for a cryptographic hash function, which is expected to be one-way. However, this
+ reversibility is not a weakness --- it is a deliberate and essential design choice.
+
+ In SHA-3, irreversibility does not come from the permutation itself but from the way the permutation is
+ embedded within the sponge construction. Only a portion of the internal state known as the rate is ever
+ exposed to input or output. The remaining portion the capacity is never directly revealed. Because an
+ attacker never observes the full state, reversing the permutation in practice becomes computationally
+ infeasible, even though the permutation is mathematically invertible.
+
+ Keccak State
+ Keccak-f[1600] operates on a 1600-bit internal state, organized as 5x5 matrix of 64-bit lanes.
+
+ A[x ,y] where 0 <= x < 5, 0 <= y < 5
+
+ Each element A[x, y] is a 64-bit word, often referred to as a lane. This structure layout allows Keccak
+ to mix data across rows, columns and diagonals in a highly mechanical way. The entire state is treated
+ as a single object: the permutation operates on all 1600 bits in 24 rounds.
+
+ Keccak-p vs Keccak-f
+ The notation Keccak-p[b, nr] refers to a permutation operating on a b-bit state for nr rounds.
+ And the Keccak-f variants are fixed, full-round permutations defined for specific state sizes.
+ Each round applies the same sequence of transformation steps with round-specific constants.
+
+ For SHA-3:
+ - State size: 1600 bits
+ - Permutation: Keccak-f[1600]
+ - Number of rounds: 24
+
+ The Five Step Mappings
+ Each round of the Keccak-f permutation consists of five transformations in following order:
+
+ 1. θ (Theta) - mixes columns
+ 2. ρ (Rho) - rotates lanes by fixed offsets
+ 3. π (Pi) - permutes lane positions
+ 4. χ (Chi) - introduces non-linearity
+ 5. ι (Iota) - injects round constants
+
+ << code & algorithms >>
+
+ Why 24 Rounds?
+ Keccak-f[1600] permutation used by SHA-3 applies 24 rounds of transformation. This round count is fixed
+ by the FIPS 202 standard and was selected to set as security margin based on extensive cryptanalysis
+ during the SHA-3 competition.
+
+ Internal State Partitions: Rate vs Capacity
+ The security of SHA-3 does not come from secrecy nor from the complexity of its Keccak mechanical permutation.
+ Instead, it is defined by how the internal state is partitioned into rate and capacity, and by how these
+ two portions interacts within the sponge construction.
+
+ SHA-3 operates on a fixed-size internal state of 1600 bits arranged as a 5x5 matrix of 64-bit lanes. This
+ state is logically divided into two parts:
+
+  State (1600 bits)
+  - Rate (r bits):
+    1. The portion of the state that absorbs input and produces output.
+    2. Input data is XORed into the rate portion and then permutation is applied.
+    3. Output bytes are read from the rate portion.
+  - Capacity (c bits):
+    1. The portion of the state that is never directly exposed.
+    2. The capacity contains bits that are never revealed even during the output.
+    3. The resistance of SHA-3 to generic attacks is directly tied to the size of the capacity.
+
+  In practical terms:
+  - Collision resistance: 2^(c/2)
+  - Preimage resistance: 2^c
+
+  SHA-3 Permutation Mental Model:
+  - The sponge construction works like reading a book where several critical pages are permanently missing.
+  No matter how many times you read the visible pages (the rate), one can never reconstruct the missing ones
+  (the capacity). The permutation rearranges all pages each time, but the hidden ones are never revealed.
+
+ ====== SHOW DEBUG Code How Capacity bits are hidden ======
+
+
+
+
+
+
+
+
+
 
 
 
