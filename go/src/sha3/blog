@@ -1,4 +1,4 @@
- Understanding FIPS 202: Keccak, SHA-3 and SHAKE Explained
+ Understanding FIPS 202: The Design of Keccak, SHA-3 and SHAKE
 
  Cryptographic hash functions are foundational to the construction of practical cryptographic systems.
  A hash function transforms input data of arbitrary length into a fixed-length message digest that is
@@ -135,20 +135,20 @@
 
  Keccak-p Permutations: The Engine Behind SHA-3
  At the core of SHA-3 lies a single cryptographic primitive: a permutation applied repeatedly to a fixed-
- size internal state. This family of permutation is known as Keccak-p[b, nr], where b denotes the width of
+ size internal state. This family of permutations is known as Keccak-p[b, nr], where b denotes the width of
  the state in bits and nr denotes the number of rounds applied. Valid state width includes b ∈ {25, 50, 100, 200,
- 400, 800, 1600}, with Keccak-f[1600] -- a 1600 bit permutation with 24-rounds being the variant standardized
- in FIPS 202. All diffusion, mixing and security properties of SHA-3 ultimately rely on repeated permutation
- of Keccak-f applied across many rounds.
+ 400, 800, 1600}, with Keccak-f[1600] -- a 1600-bit permutation with 24 rounds being the variant standardized
+ in FIPS 202. All the diffusion, mixing, and security properties of SHA-3 ultimately rely on the
+ repeated permutation of Keccak-f across many rounds.
 
- Keccak permutation is bijective transformation: it deterministically rearranges and mixes bits in a reversible
- manner. The permutation can be inverted with the given full internal state. At first glance, this may
- appear counterintuitive for a cryptographic hash function, which is expected to be one-way. However, this
- reversibility is not a weakness --- it is a deliberate and essential design choice.
+ The Keccak permutation is a bijective transformation: it reversibly rearranges and mixes bits
+ deterministically. The permutation can be inverted with the given full internal state. At first glance,
+ this may appear counterintuitive for a cryptographic hash function, which is expected to be one-way.
+ However, this Reversibility is not a weakness—it is a deliberate and essential design choice.
 
- In SHA-3, irreversibility does not come from the permutation itself but from the way the permutation is
- embedded within the sponge construction. Only a portion of the internal state known as the rate is ever
- exposed to input or output. The remaining portion the capacity is never directly revealed. Because an
+ In SHA-3, irreversibility does not come from the permutation itself, but from the way the permutation is
+ embedded within the sponge construction. Only a portion of the internal state, known as the rate, is ever
+ exposed to input or output. The remaining capacity is never directly revealed. Because an
  attacker never observes the full state, reversing the permutation in practice becomes computationally
  infeasible, even though the permutation is mathematically invertible.
 
@@ -157,8 +157,8 @@
 
  A[x ,y] where 0 <= x < 5, 0 <= y < 5
 
- Each element A[x, y] is a 64-bit word, often referred to as a lane. This structure layout allows Keccak
- to mix data across rows, columns and diagonals in a highly mechanical way. The entire state is treated
+ Each element A[x, y] is a 64-bit word, often called a lane. This structure layout allows Keccak
+ to mix data across rows, columns, and diagonals in a highly mechanical way. The entire state is treated
  as a single object: the permutation operates on all 1600 bits in 24 rounds.
 
  Keccak-p vs Keccak-f
@@ -174,36 +174,97 @@
  The Five Step Mappings
  Each round of the Keccak-f permutation consists of five transformations in following order:
 
- 1. θ (Theta) - mixes columns
- 2. ρ (Rho) - rotates lanes by fixed offsets
+ 1. θ (Theta) - Column Mixing
+ For each column, θ computes XOR of all five lanes in that column and then propagates this value into
+ neighbouring columns. This operation ensures that every bit is touched multiple columns in subsequent
+ rounds.
+
+ - Spreads input differences across the entire state.
+ - Provides global diffusion.
+ - Preserves linearity.
+
+ << Theta code >>
+
+ 2. ρ (Rho) - Bitwise Rotation
+ The ρ step rotates each lane by a fixed lane-specific offset. Each of the 25 lanes is rotated left by a
+ predetermined number of bits. These offsets are chosen so that bits are redistributed across different
+ positions in later steps.
+
+ - Breaks bits alignment.
+ - Preserves bit values, only changes positions.
+
+ << Rho code >>
+
  3. π (Pi) - permutes lane positions
+ The π step permutes the positions of the lanes within the 5x5 matrix. Each lane is moved to a new location
+ according to a fixed mapping. The rearrangement ensures that bits from one column end up prepositioning
+ itself in different columns in later rounds.
+
+ - Shuffles structural relationships of the bits in column.
+ - Prepares the state for non-linear mixing.
+
+ << Pi code >>
+
  4. χ (Chi) - introduces non-linearity
+ The (x) step is the only non-linear operation in the Keccak permutation. It operates on each row independently
+ and updates each lane as a function of itself and its neighbours. This stage introduces conditional
+ dependencies between lanes and breaks linear relationships created by the earlier stage.
+
+ - Destroys the linear correlation or transformation.
+ - Prevents algebraic reconstruction.
+ - Provides cryptographic confusion.
+
+ << Chi code >>
+
+
  5. ι (Iota) - injects round constants
+ The ι step XORs a round-specific constant into a single of the state. This prevents the permutation from
+ exhibiting symmetry or fixed-points across rounds. Without (ι) certain structured inputs could evolve
+ identically across rounds.
+
+ - Breaking symmetry from first round & first lane.
 
  << code & algorithms >>
 
+ Non-linearity: The Core of Keccak's Security
+ The first three stages θ, ρ, and π spread information efficiently across the state, they are all linear
+ operations. The χ step is the one who breaks that linearity relationship of bits among neighbouring columns.
+
+ - Output bits are no longer linear combinations of input bits.
+ - Small differences becomes conditionally dependent on neighbouring values.
+ - After (x) stage, algebraic relations between bits are destroyed.
+
+ In practical terms, (x) breaks all meaningful relationships between adjacent and diagonal lanes, producing
+ values that no longer resemble their neighbours. This is where structured diffusion becomes cryptographic
+ confusion.
+
+
+
+
+
+
  Why 24 Rounds?
- Keccak-f[1600] permutation used by SHA-3 applies 24 rounds of transformation. This round count is fixed
- by the FIPS 202 standard and was selected to set as security margin based on extensive cryptanalysis
+ The Keccak-f[1600] permutation used by SHA-3 applies 24 rounds of transformation. This round count is fixed
+ by the FIPS 202 standard and was selected as a security margin based on extensive cryptanalysis
  during the SHA-3 competition.
 
  Internal State Partitions: Rate vs Capacity
- The security of SHA-3 does not come from secrecy nor from the complexity of its Keccak mechanical permutation.
- Instead, it is defined by how the internal state is partitioned into rate and capacity, and by how these
- two portions interacts within the sponge construction.
+ The security of SHA-3 does not come from secrecy nor from the complexity of its Keccak mechanical
+ permutation. Instead, it is defined by how the internal state is partitioned into rate and capacity,
+ and by how these two portions interact within the sponge construction.
 
  SHA-3 operates on a fixed-size internal state of 1600 bits arranged as a 5x5 matrix of 64-bit lanes. This
  state is logically divided into two parts:
 
   State (1600 bits)
-  - Rate (r bits):
-    1. The portion of the state that absorbs input and produces output.
-    2. Input data is XORed into the rate portion and then permutation is applied.
-    3. Output bytes are read from the rate portion.
+   - Rate (r bits):
+     1. The portion of the state that absorbs input and produces output.
+     2. Input data is XORed into the rate portion, and then a permutation is applied.
+     3. Output bytes are read from the rate portion.
   - Capacity (c bits):
-    1. The portion of the state that is never directly exposed.
-    2. The capacity contains bits that are never revealed even during the output.
-    3. The resistance of SHA-3 to generic attacks is directly tied to the size of the capacity.
+     1. The portion of the state that is never directly exposed.
+     2. The capacity contains bits that are never revealed, even during the output.
+     3. The resistance of SHA-3 to generic attacks is directly tied to the size of the capacity.
 
   In practical terms:
   - Collision resistance: 2^(c/2)
@@ -215,6 +276,95 @@
   (the capacity). The permutation rearranges all pages each time, but the hidden ones are never revealed.
 
  ====== SHOW DEBUG Code How Capacity bits are hidden ======
+
+ Before xorIn:
+
+ lanes:  [ 0 ][ 1 ][ 2 ] ... [16 ][17 ][18 ][19 ][20 ][21 ][22 ][23 ][24 ]
+           R    R    R        R    C    C    C    C    C    C    C    C
+
+ xorIn loop runs for i = 0..16 only
+
+
+ SHAKE128 vs SHAKE256
+  Both SHAKE128 and SHAKE256 are extendable-output functions (XOFs) built on the same Keccak-f[1600]
+  permutation and the same sponge construction. They differ only in how the 1600-bit state is split
+  between rate and capacity.
+
+  Core Parameters
+  Property              SHAKE128                SHAKE256
+  Permutation           Keccak-f[1600]          Keccak-f[1600]
+  Rate(r)               1344 bits(168 bytes)    1088 bits (136 bytes)
+  Capacity(c)           256 bits                512 bits
+  Security level        128                     256
+
+
+ SHA-3 Padding: Domain Separation and Message Finalization
+ SHA-3 uses a carefully designed padding scheme that serves two distinct but equally important purposes:
+ domain separation and the final padding bit, which marks the end of the message.
+
+ Domain Separator Byte
+ The domain-separator byte prepositions the hash block and enforces alignment between the input and the
+ intended construction. Its purpose is to ensure that same message, when processed under different hash-
+ function paradigms built on the same permutation, cannot collide or be misinterpreted.
+
+ The main purpose of domain-separator byte to identify which hash-function construction is being used on
+ top of the Keccak permutation.
+
+ - SHA-3 fixed-length hashes use 0x06
+ - SHAKE extendable-output functions use 0x1F
+
+ Although SHA-3 and SHAKE share the same Keccak-f[1600] permutation, they must operate in distinct
+ cryptography domains. If we do a quick test an input msg "Hello World" and run against all SHA-3
+ and SHAKE hash-functions then output block will be different.
+
+ func TestHelloWorldHash(t *testing.T) {
+ 	msg := "Hello World"
+ 	for _, paradigm := range []string{"SHA3-224", "SHA3-256", "SHA3-384", "SHA3-512", "SHAKE128", "SHAKE256"} {
+ 		var s State
+ 		switch paradigm {
+ 		case "SHA3-224":
+ 			s = New224()
+ 		case "SHA3-256":
+ 			s = New256()
+ 		case "SHA3-384":
+ 			s = New384()
+ 		case "SHA3-512":
+ 			s = New512()
+ 		case "SHAKE128":
+ 			s = NewShake128()
+ 		case "SHAKE256":
+ 			s = NewShake256()
+ 		}
+ 		h := make([]byte, 64)
+ 		msgBytes := []byte(msg)
+ 		s.Write(msgBytes)
+ 		s.Read(h[:])
+ 		fmt.Println("Paradigm = ", paradigm, " - hashBlocks = ", h)
+ 	}
+ }
+
+Output:
+Paradigm =  SHA3-224  - hashBlocks =  [142 128 0 121 160 179 17 120 139 242 147 83 244 0 239 249 105 182 80 163 89 124 145 239 217 170 91 56 125 135 205 161 200 196 70 237 97 88 224 135 171 14 236 25 67 234 56 120 117 120 244 60 201 140 76 254 230 127 29 227 56 242 112 165]
+Paradigm =  SHA3-256  - hashBlocks =  [225 103 246 141 101 99 215 91 178 95 58 164 156 41 239 97 45 65 53 45 192 6 6 222 124 189 99 11 178 102 95 81 132 219 99 6 49 203 184 44 101 25 48 246 53 216 231 42 10 207 211 88 124 178 239 16 79 25 117 119 163 162 54 178]
+Paradigm =  SHA3-384  - hashBlocks =  [167 142 194 133 30 153 22 56 206 80 93 74 68 239 166 6 221 64 86 211 171 39 78 198 253 186 192 12 222 22 71 130 99 239 114 19 186 213 167 219 112 68 245 141 99 122 253 235 108 172 131 32 214 216 18 154 63 218 8 195 223 146 116 131]
+Paradigm =  SHA3-512  - hashBlocks =  [61 88 167 25 198 134 107 2 20 249 107 10 103 179 126 81 169 30 35 60 224 190 18 106 8 243 95 223 76 4 60 97 38 244 1 57 191 188 51 141 68 235 42 3 222 159 123 184 239 240 172 38 11 54 41 129 30 56 154 95 190 232 168 148]
+Paradigm =  SHAKE128  - hashBlocks =  [18 39 197 248 130 249 197 123 242 227 228 141 44 135 235 32 243 130 164 182 57 181 77 38 246 213 149 255 61 185 6 77 7 78 231 136 240 116 124 163 252 70 206 134 147 108 252 107 211 99 141 174 90 43 125 101 146 82 41 152 214 218 111 170]
+Paradigm =  SHAKE256  - hashBlocks =  [132 13 28 232 26 67 39 132 11 84 203 29 65 153 7 253 31 98 53 155 173 51 101 110 5 134 83 210 228 23 42 67 172 201 88 219 236 12 240 212 115 219 69 140 225 192 7 170 110 180 14 172 146 170 14 101 32 46 219 77 127 238 211 120]
+
+ Final Padding Bit (0x80)
+ The final padding step in SHA-3 applies an XOR with 0x80 to the last byte of the rate buffer. This sets the
+ most significant bit of the final rate byte, corresponding to the closing 1 bit in the multi-rate padding
+ scheme (pad10*1).
+
+ This final 0x80 bit acts as an explicit end-of-message delimiter. It guarantees that every padded message
+ has a unique representation and that no padded message can be prefix of another.
+
+ Without this final bit, different messages could produce identical padded states. Even if a domain separator
+ byte is present, omitting the final 0x80 would allow distinct inputs to collide after padding, breaking the
+ injective property required for secure hashing.
+
+
+
 
 
 

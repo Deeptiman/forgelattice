@@ -11,6 +11,7 @@ import (
 	"compress/flate"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/Deeptiman/forgekey/go/src/sha3/keccak"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
@@ -186,5 +187,49 @@ func BenchmarkPermutationFunction(b *testing.B) {
 	var lanes keccak.Lanes
 	for i := 0; i < b.N; i++ {
 		lanes.PermuteWith1600()
+	}
+}
+
+// debugCapacity returns the capacity lanes.
+// FOR TESTING / DEMONSTRATION ONLY.
+func (s *State) debugCapacity() []uint64 {
+	rateLanes := s.rate / 8
+	return s.lanes[rateLanes:]
+}
+
+func TestCapacityHidden(t *testing.T) {
+	s := NewShake128()
+	s.Write([]byte("Hello World"))
+	s.Read(make([]byte, 32))
+
+	capacity := s.debugCapacity()
+	for i, lane := range capacity {
+		t.Logf("capacity lane %d: %016x", i, lane)
+	}
+}
+
+func TestHelloWorldHash(t *testing.T) {
+	msg := "Hello World"
+	for _, paradigm := range []string{"SHA3-224", "SHA3-256", "SHA3-384", "SHA3-512", "SHAKE128", "SHAKE256"} {
+		var s State
+		switch paradigm {
+		case "SHA3-224":
+			s = New224()
+		case "SHA3-256":
+			s = New256()
+		case "SHA3-384":
+			s = New384()
+		case "SHA3-512":
+			s = New512()
+		case "SHAKE128":
+			s = NewShake128()
+		case "SHAKE256":
+			s = NewShake256()
+		}
+		h := make([]byte, 64)
+		msgBytes := []byte(msg)
+		s.Write(msgBytes)
+		s.Read(h[:])
+		fmt.Println("Paradigm = ", paradigm, " - hashBlocks = ", h)
 	}
 }
