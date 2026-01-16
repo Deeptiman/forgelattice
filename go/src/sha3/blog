@@ -363,6 +363,43 @@ Paradigm =  SHAKE256  - hashBlocks =  [132 13 28 232 26 67 39 132 11 84 203 29 6
  byte is present, omitting the final 0x80 would allow distinct inputs to collide after padding, breaking the
  injective property required for secure hashing.
 
+ SHA-3 and SHAKE in the Post-Quantum Cryptography schemes
+ In modern cryptography, Post-quantum cryptography schemes rely heavily on cryptographic hash functions,
+ not only for integrity but also as core building blocks. Unlike the classical public-key systems,
+ PQC scheme constructions are built around structured randomness, deterministic randomness, and
+ domain-separated hashing.
+
+ SHA-3 and its extendable-output variants (SHAKE128 and SHAKE256) are particularly well-suited for these
+ requirements. The sponge construction provides a clean and flexible interface for absorbing structured
+ input and deterministically expanding it into large pseudorandom outputs. This capability is essential
+ in post-quantum schemes where small seeds must be expanded into vectors, matrices, or challenges with
+ well-defined statistical properties. Domain-separation is also an important aspect while building
+ Post-quantum protocols, which frequently reuses hash functions in multiple security layers within
+ the same algorithm. This additional byte separates hash function results even though the underlying
+ permutation is the same.
+
+ In the later articles, we will examine how SHA-3 and SHAKE are used as fundamental components in
+ lattice-based cryptography, where the hash functions are used for key-generation, encapsulation, and
+ signature mechanism.
+
+ Conclusion
+ SHA-3 represents a fundamental shift in the design of cryptographic hash functions. Abandoning the
+ conventional block-chaining constructions in SHA-2 and taking an entirely different approach with internal
+ state and a mechanical permutation, SHA-3 achieves strong diffusion, clean domain separation, and flexible
+ output generation within a unified framework.
+
+ The Keccak permutation itself is fully deterministic and reversible, yet when embedded within the Sponge
+ construction, it becomes part of a one-way system. This highlights the irreversibility in cryptography
+ often determined by enforcing unambiguous padding and combining linear diffusion with controlled
+ non-linearity of an individual component.
+
+ SHA-3 derives its security not from hiding linear structure, but from exposing it. The linear diffusion
+ rules of the Keccak permutation are fully public and reversible; security arises because this known linear
+ diffusion is repeatedly conditioned by carefully placed non-linear transformations that irreversibly entangle
+ the internal state. As a result, linear reasoning spreads information efficiently but cannot be composed
+ to recover or predict the hidden state. In SHA-3, non-linearity is the mechanism that makes the diffusion one-way.
+
+
 
 
 
