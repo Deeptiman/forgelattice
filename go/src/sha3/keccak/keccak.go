@@ -95,6 +95,17 @@ func (l *Lanes) Chi() {
 			row[x] = l[idx(x, y)]
 		}
 		for x := 0; x < 5; x++ {
+			// Triple bluff:
+			//
+			// 1. Negation (^row[(x+1)%5]) inverts the bits of the neighbouring
+			// lane breaking linear expectations.
+			//
+			// 2. AND creates (^row[(x+1)%5] & row[(x+2)%5]) conditional dependency
+			// on two neighbours. A bit is returned only if both conditions are met.
+			//
+			// 3. XOR with the original lane (⊕ row[x]) injects this conditional mask
+			// to back into the state but output cannot be recomputed as a linear function
+			// of the inputs.
 			l[idx(x, y)] = row[x] ^ (^row[(x+1)%5] & row[(x+2)%5])
 		}
 	}
