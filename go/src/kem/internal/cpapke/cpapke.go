@@ -1,8 +1,8 @@
 package cpapke
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/common"
-	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/poly"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/common"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/poly"
 )
 
 const (

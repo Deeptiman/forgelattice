@@ -1,7 +1,7 @@
 package kem
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/cpapke"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/cpapke"
 	"github.com/Deeptiman/forgekey/go/src/kem/mlkem/fips203"
 )
 

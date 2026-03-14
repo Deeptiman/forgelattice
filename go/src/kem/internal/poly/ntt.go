@@ -1,9 +1,9 @@
 package poly
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/common"
-	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/math"
-	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/reduction"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/common"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/math"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/reduction"
 	"github.com/Deeptiman/forgekey/go/src/prime"
 	"math/big"
 )
