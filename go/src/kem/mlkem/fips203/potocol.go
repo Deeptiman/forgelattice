@@ -3,8 +3,8 @@ package fips203
 import (
 	"bytes"
 	"crypto/subtle"
-	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/common"
-	"github.com/Deeptiman/forgekey/go/src/kem/internal/kyber/cpapke"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/common"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/cpapke"
 	"github.com/Deeptiman/forgekey/go/src/sha3"
 )
 

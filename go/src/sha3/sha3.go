@@ -147,6 +147,26 @@ func (s *State) buf() []byte {
 	return s.rateBuf[:s.bufLen]
 }
 
+// padAndPermute applies domain separation and multi-rate padding then transition the sponge from
+// absorbing to squeezing.
+func (s *State) padAndPermute(dsbyte byte) {
+	padIndex := s.bufLen
+	s.bufLen = s.rate
+	buf := s.buf()
+	buf[padIndex] = dsbyte
+	for i := padIndex + 1; i < s.rate; i++ {
+		buf[i] = 0
+	}
+
+	// Final padding bit.
+	buf[s.rate-1] ^= 0x80 // XORing the last-1-byte
+
+	s.permute()
+	s.phase = Squeezing
+	s.bufLen = s.rate
+	s.copyOut(buf)
+}
+
 // permute applies the Keccak-f[1600] permutation depending on sponge phase.
 func (s *State) permute() {
 	switch s.phase {
@@ -161,26 +181,6 @@ func (s *State) permute() {
 		s.bufLen = s.rate
 		s.copyOut(s.buf())
 	}
-}
-
-// padAndPermute applies domain separation and multi-rate padding then transition the sponge from
-// absorbing to squeezing.
-func (s *State) padAndPermute(dsbyte byte) {
-	padIndex := s.bufLen
-	s.bufLen = s.rate
-	buf := s.buf()
-	buf[padIndex] = dsbyte
-	for i := padIndex + 1; i < s.rate; i++ {
-		buf[i] = 0
-	}
-
-	// Final padding bit.
-	buf[s.rate-1] ^= 0x80 // XORing the last-bit with 128
-
-	s.permute()
-	s.phase = Squeezing
-	s.bufLen = s.rate
-	s.copyOut(buf)
 }
 
 // clone returns a shallow copy of the sponge state.
