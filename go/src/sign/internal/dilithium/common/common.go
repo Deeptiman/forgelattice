@@ -3,10 +3,8 @@ package common
 import "github.com/Deeptiman/forgekey/go/src/prime"
 
 const (
-	// CIRCL Common Params
 	N                     = 256
 	Q                     = 8380417 // 2²³ - 2¹³ + 1
-	R                     = 1 << 32
 	QBits                 = 23
 	D                     = 13
 	SeedSize              = 32

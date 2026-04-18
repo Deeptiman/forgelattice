@@ -1,6 +1,7 @@
 package poly
 
 import (
+	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -11,7 +12,7 @@ func TestPrecomputeTwiddleFactor(t *testing.T) {
 	assert.Equal(t, testInvZetas, PrecomputeInverseZetas())
 }
 
-var testZetas = [N]uint32{
+var testZetas = [common.N]uint32{
 	4193792, 25847, 5771523, 7861508, 237124, 7602457, 7504169,
 	466468, 1826347, 2353451, 8021166, 6288512, 3119733, 5495562,
 	3111497, 2680103, 2725464, 1024112, 7300517, 3585928, 7830929,
@@ -51,7 +52,7 @@ var testZetas = [N]uint32{
 	3937738, 1400424, 7534263, 1976782,
 }
 
-var testInvZetas = [N]uint32{
+var testInvZetas = [common.N]uint32{
 	6403635, 846154, 6979993, 4442679, 1362209, 48306, 4460757,
 	554416, 3545687, 6767575, 976891, 8196974, 2286327, 420899,
 	2235985, 2939036, 3833893, 260646, 1104333, 1667432, 6470041,

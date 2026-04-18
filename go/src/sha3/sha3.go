@@ -32,9 +32,9 @@ const (
 	// SpongePhase rates in bytes for each SHA-3 variants.
 	rate128 = 168
 	rate224 = 144
+	rate256 = 136
 	rate384 = 104
 	rate512 = 72
-	rate256 = 136
 )
 
 // State represents the internal state of the SHA-3 / SHAKE sponge.
@@ -127,7 +127,7 @@ func (s *State) Read(out []byte) {
 		consumed += n
 		out = out[n:]
 
-		if consumed == s.bufLen {
+		if n == s.bufLen {
 			s.permute()
 		}
 	}
