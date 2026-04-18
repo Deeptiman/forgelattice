@@ -31,9 +31,9 @@ type PrivateKey struct {
 
 type Constant struct {
 	// K: dimension of the public vector.
-	K uint16
+	K int
 	// L : dimension of the private vector.
-	L uint16
+	L int
 	// Q: Dilithium prime modulus = 8380417.
 	Q int
 	// N: Polynomial Degree N = 256
@@ -52,7 +52,8 @@ type Constant struct {
 	// s1, s2 coeffs ∈ {−𝜂, …, 𝜂}
 	// 𝜂=2 --> 5 possible values, strict tight noise.
 	// 𝜂=4 --> 9 possible values, slightly more noise.
-	Eta int
+	Eta           int
+	DoubleEtaBits int
 
 	// Beta 𝛽=𝜏⋅𝜂 : rejection bound for z = y + c.s1
 	Beta int
@@ -69,6 +70,9 @@ type Constant struct {
 
 	// Omega(ω): maximum number of non-zero entries allowed in hint vector h.
 	Omega int
+
+	// Alpha(α): maximum width to fit widest possible step size for the high part (a1).
+	Alpha int
 
 	// ML-DSA-44:
 	// -> PrivateKeySize = 2560
@@ -89,6 +93,13 @@ type Constant struct {
 	PublicKeySize  int
 	PrivateKeySize int
 	SignatureSize  int
+
+	PolyT0Size       int
+	PolyT1Size       int
+	PolyLeqEtaSize   int
+	PolyW1PackedSize int
+	PolyLeGamma1Size int
+	CTildeSize       int
 }
 
 type Params struct {
@@ -166,16 +177,16 @@ func ParamFor(l Level) Params {
 }
 
 // NewPolyVec allocates a polynomial vector of dimension K appropriate for the given security level.
-func NewPolyVec(dim uint16) poly.Vec {
+func NewPolyVec(dim int) poly.Vec {
 	return make(poly.Vec, dim)
 }
 
 // NewPolyMatrix allocates a KxK polynomial matrix appropriate for the given security level.
-func NewPolyMatrix(K, L uint16) poly.Mat {
+func NewPolyMatrix(K, L int) poly.Mat {
 	m := make(poly.Mat, K)
-	for i := uint16(0); i < K; i++ {
+	for i := 0; i < K; i++ {
 		m[i] = make(poly.Vec, K)
-		for j := uint16(0); j < L; j++ {
+		for j := 0; j < L; j++ {
 			m[i][j] = poly.Poly{}
 		}
 	}
@@ -186,57 +197,75 @@ func (l Level) WithConstants() Constant {
 	switch l {
 	case Level2:
 		return Constant{
-			K:              4,
-			L:              4,
-			Q:              8380417,
-			N:              256,
-			D:              13,
-			Eta:            2,
-			Tau:            39,
-			Beta:           78,
-			Gamma1:         (1 << 17) - 1,
-			Gamma1Bits:     17,
-			Gamma2:         95232, // (Q-1)/88
-			Omega:          80,
-			PublicKeySize:  1312,
-			PrivateKeySize: 2560,
-			SignatureSize:  2420,
+			K:                4,
+			L:                4,
+			Q:                8380417,
+			N:                256,
+			D:                13,
+			Eta:              2,
+			DoubleEtaBits:    3,
+			Tau:              39,
+			Beta:             78,
+			Gamma1:           1 << 17,
+			Gamma1Bits:       17,
+			Gamma2:           95232, // (Q-1)/88
+			Omega:            80,
+			Alpha:            190464, // α = 2 * Gamma2
+			PublicKeySize:    1312,
+			PrivateKeySize:   2560,
+			SignatureSize:    2420,
+			PolyLeqEtaSize:   96, // (common.N * DoubleEtaBits) / 8
+			PolyW1PackedSize: (common.N * (common.QBits - 17)) / 8,
+			PolyLeGamma1Size: ((17 + 1) * common.N) / 8,
+			CTildeSize:       32,
 		}
 	case Level3:
 		return Constant{
-			K:              6,
-			L:              5,
-			Q:              8380417,
-			N:              256,
-			D:              13,
-			Eta:            4,
-			Tau:            49,
-			Beta:           196,
-			Gamma1:         (1 << 19) - 1,
-			Gamma1Bits:     19,
-			Gamma2:         261888, // (Q-1)/32
-			Omega:          55,
-			PublicKeySize:  1952,
-			PrivateKeySize: 4032,
-			SignatureSize:  3309,
+			K:                6,
+			L:                5,
+			Q:                8380417,
+			N:                256,
+			D:                13,
+			Eta:              4,
+			DoubleEtaBits:    4,
+			Tau:              49,
+			Beta:             196,
+			Gamma1:           1 << 19,
+			Gamma1Bits:       19,
+			Gamma2:           261888, // (Q-1)/32
+			Omega:            55,
+			Alpha:            523776, // α = 2 * Gamma2
+			PublicKeySize:    1952,
+			PrivateKeySize:   4032,
+			SignatureSize:    3309,
+			PolyLeqEtaSize:   128, // (common.N * DoubleEtaBits) / 8
+			PolyW1PackedSize: (common.N * (common.QBits - 19)) / 8,
+			PolyLeGamma1Size: ((19 + 1) * common.N) / 8,
+			CTildeSize:       48,
 		}
 	case Level5:
 		return Constant{
-			K:              8,
-			L:              7,
-			Q:              8380417,
-			N:              256,
-			D:              13,
-			Eta:            2,
-			Tau:            60,
-			Beta:           120,
-			Gamma1:         (1 << 19) - 1,
-			Gamma1Bits:     19,
-			Gamma2:         261888, // (Q-1)/32
-			Omega:          75,
-			PublicKeySize:  2592,
-			PrivateKeySize: 4896,
-			SignatureSize:  4627,
+			K:                8,
+			L:                7,
+			Q:                8380417,
+			N:                256,
+			D:                13,
+			Eta:              2,
+			DoubleEtaBits:    3,
+			Tau:              60,
+			Beta:             120,
+			Gamma1:           1 << 19,
+			Gamma1Bits:       19,
+			Gamma2:           261888, // (Q-1)/32
+			Omega:            75,
+			Alpha:            523776, // α = 2 * Gamma2
+			PublicKeySize:    2592,
+			PrivateKeySize:   4896,
+			SignatureSize:    4627,
+			PolyLeqEtaSize:   96, // (common.N * DoubleEtaBits) / 8
+			PolyW1PackedSize: (common.N * (common.QBits - 19)) / 8,
+			PolyLeGamma1Size: ((19 + 1) * common.N) / 8,
+			CTildeSize:       64,
 		}
 	default:
 		panic("invalid dilithium security level")
