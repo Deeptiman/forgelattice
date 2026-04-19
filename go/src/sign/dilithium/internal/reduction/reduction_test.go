@@ -27,7 +27,7 @@ func TestModRed_MontgomeryEncodeWithDilithium(t *testing.T) {
 
 func TestModRed_MontgomeryMulWithDilithium(t *testing.T) {
 	for i := 0; i < 200; i++ {
-		t.Run(fmt.Sprintf("M-Test=%d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Montgomery(DSA)-Test=%d", i), func(t *testing.T) {
 			t.Parallel()
 			QBig := big.NewInt(int64(common.Q))
 			ai, err := rand.Int(rand.Reader, QBig)
