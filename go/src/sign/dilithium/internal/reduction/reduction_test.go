@@ -2,6 +2,7 @@ package reduction
 
 import (
 	"crypto/rand"
+	"fmt"
 	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/common"
 	"github.com/stretchr/testify/assert"
 	"math/big"
@@ -25,33 +26,36 @@ func TestModRed_MontgomeryEncodeWithDilithium(t *testing.T) {
 }
 
 func TestModRed_MontgomeryMulWithDilithium(t *testing.T) {
-	QBig := big.NewInt(int64(common.Q))
+	for i := 0; i < 200; i++ {
+		t.Run(fmt.Sprintf("M-Test=%d", i), func(t *testing.T) {
+			t.Parallel()
+			QBig := big.NewInt(int64(common.Q))
+			ai, err := rand.Int(rand.Reader, QBig)
+			assert.NoError(t, err)
+			bi, err := rand.Int(rand.Reader, QBig)
+			assert.NoError(t, err)
+			// test values [a * b]
+			a := uint32(ai.Uint64())
+			b := uint32(bi.Uint64())
 
-	for i := 0; i < 2000; i++ {
-		ai, err := rand.Int(rand.Reader, QBig)
-		assert.NoError(t, err)
-		bi, err := rand.Int(rand.Reader, QBig)
-		assert.NoError(t, err)
-		// test values [a * b]
-		a := uint32(ai.Uint64())
-		b := uint32(bi.Uint64())
+			// Mont Encoding
+			am := uint32((uint64(a) * (1 << 32)) % common.Q)
+			bm := uint32((uint64(b) * (1 << 32)) % common.Q)
 
-		// Mont Encoding
-		am := uint32((uint64(a) * (1 << 32)) % common.Q)
-		bm := uint32((uint64(b) * (1 << 32)) % common.Q)
+			// Montgomery mul should be equal to Encoding.
+			prod := MontgomeryMul(am, bm)
+			x := ((uint64(a) * uint64(b)) % common.Q) * (1 << 32)
+			expected := uint32(x % common.Q)
+			assert.Equal(t, expected, prod)
 
-		// Montgomery mul should be equal to Encoding.
-		prod := MontgomeryMul(am, bm)
-		//expected := uint32((((uint64(a) * uint64(b)) % common.Q) * (1 << 32)) % common.Q)
-		//assert.Equal(t, expected, prod)
+			decoded := MontgomeryMul(prod, 1)
+			assert.Equal(t, uint32((uint64(a)*uint64(b))%common.Q), decoded)
 
-		decoded := MontgomeryMul(prod, 1)
-		assert.Equal(t, uint32((uint64(a)*uint64(b))%common.Q), decoded)
+			decodedA := MontgomeryMul(am, 1)
+			assert.Equal(t, a%uint32(common.Q), decodedA)
 
-		decodedA := MontgomeryMul(uint32(am), 1)
-		assert.Equal(t, a%uint32(common.Q), decodedA)
-
-		decodedB := MontgomeryMul(uint32(bm), 1)
-		assert.Equal(t, b%uint32(common.Q), decodedB)
+			decodedB := MontgomeryMul(bm, 1)
+			assert.Equal(t, b%uint32(common.Q), decodedB)
+		})
 	}
 }
