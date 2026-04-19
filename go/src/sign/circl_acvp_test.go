@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/common"
-	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/dsa"
+	"github.com/Deeptiman/forgekey/go/src/sign/internal/common"
+	"github.com/Deeptiman/forgekey/go/src/sign/internal/dsa"
 	"testing"
 )
 
