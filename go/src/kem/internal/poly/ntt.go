@@ -2,9 +2,8 @@ package poly
 
 import (
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/common"
-	"github.com/Deeptiman/forgekey/go/src/kem/internal/math"
+	"github.com/Deeptiman/forgekey/go/src/kem/internal/mathutils"
 	"github.com/Deeptiman/forgekey/go/src/kem/internal/reduction"
-	"github.com/Deeptiman/forgekey/go/src/prime"
 	"math/big"
 )
 
@@ -162,10 +161,10 @@ func PrecomputeZetas() [128]int16 {
 
 		// Compute the bit-reversed exponent.
 		// This determines the order in which roots are used by the NTT.
-		exp := math.BitReverse(i)
+		exp := mathutils.BitReverse(i)
 
 		// Compute zeta^exp mod Q
-		v := math.ModPow(zeta, exp, int(common.Q))
+		v := mathutils.ModPow(zeta, exp, int(common.Q))
 
 		// Convert the root into Montgomery representation.
 		// Storing zetas in Montgomery form allows all NTT multiplications to use
@@ -187,6 +186,6 @@ func FindPrimitiveRoot() int {
 	// work and be invertible. (In short: z sets the twiddle factor order of elements).
 	order := uint64(common.N)
 	qBig := new(big.Int).SetUint64(order)
-	factors := prime.FactorByPollardRho(qBig)
-	return int(prime.FindPrimitiveRoots(uint64(common.Q), order, factors))
+	factors := mathutils.FactorByPollardRho(qBig)
+	return int(mathutils.FindPrimitiveRoots(uint64(common.Q), order, factors))
 }

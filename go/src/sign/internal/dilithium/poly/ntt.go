@@ -1,9 +1,8 @@
 package poly
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/prime"
 	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/common"
-	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/math"
+	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/mathutils"
 	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/reduction"
 	"math/big"
 )
@@ -24,8 +23,8 @@ func FindPrimitiveRoot() int {
 	// work and be invertible. (In short: z sets the twiddle factor order of elements).
 	order := uint64(2 * common.N)
 	qBig := new(big.Int).SetUint64(order)
-	factors := prime.FactorByPollardRho(qBig)
-	return int(prime.FindPrimitiveRoots(uint64(common.Q), order, factors))
+	factors := mathutils.FactorByPollardRho(qBig)
+	return int(mathutils.FindPrimitiveRoots(uint64(common.Q), order, factors))
 }
 
 func PrecomputeZetas() [256]uint32 {
@@ -34,7 +33,7 @@ func PrecomputeZetas() [256]uint32 {
 	q := big.NewInt(int64(common.Q))      // 8380417
 	var z [256]uint32
 	for i := 0; i < 256; i++ {
-		pow := math.ModPow(zeta, math.BitReverse(i), common.Q)
+		pow := mathutils.ModPow(zeta, mathutils.BitReverse(i), common.Q)
 		powBig := big.NewInt(int64(pow))
 		powBig.Mul(powBig, R)
 		powBig.Mod(powBig, q)
@@ -45,13 +44,13 @@ func PrecomputeZetas() [256]uint32 {
 
 func PrecomputeInverseZetas() [256]uint32 {
 	zeta := FindPrimitiveRoot()
-	invZeta := math.ModPow(zeta, common.Q-2, common.Q)
+	invZeta := mathutils.ModPow(zeta, common.Q-2, common.Q)
 	R := big.NewInt(int64(common.R2modQ)) // 4193792
 	q := big.NewInt(int64(common.Q))      // 8380417
 
 	var z [256]uint32
 	for i := 0; i < 256; i++ {
-		pow := math.ModPow(invZeta, -(math.BitReverse(255-i) - 256), common.Q)
+		pow := mathutils.ModPow(invZeta, -(mathutils.BitReverse(255-i) - 256), common.Q)
 		powBig := big.NewInt(int64(pow))
 		powBig.Mul(powBig, R)
 		powBig.Mod(powBig, q)
