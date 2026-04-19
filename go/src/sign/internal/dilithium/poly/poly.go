@@ -120,7 +120,7 @@ func (p *Poly) SampleInBall(tau int, seed []byte) {
 
 	offset := 8
 	*p = Poly{}
-	for i := uint16(0); i < uint16(tau); i++ {
+	for i := uint16(common.N - tau); i < common.N; i++ {
 		var b uint16
 		for {
 			if offset >= 136 {
@@ -437,4 +437,12 @@ func (p *Poly) UnpackT1(buf []byte) {
 		p.coeffs[j+3] = (uint32(buf[i+3]>>6) | (uint32(buf[i+4]) << 2)) & 0x3ff
 		j += 4
 	}
+}
+
+func (p *Poly) Accumulator(q *Poly) uint32 {
+	acc := uint32(0)
+	for j := 0; j < common.N; j++ {
+		acc |= p.coeffs[j] ^ q.coeffs[j]
+	}
+	return acc
 }

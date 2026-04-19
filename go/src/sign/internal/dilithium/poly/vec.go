@@ -37,10 +37,10 @@ func (v Vec) ExpandS1(secretSeed *[64]byte, eta int) {
 	}
 }
 
-func (v Vec) ExpandS2(secretSeed *[64]byte, eta int) {
+func (v Vec) ExpandS2(secretSeed *[64]byte, eta, L int) {
 	dimensions := len(v)
 	for i := 0; i < dimensions; i++ {
-		v[i].RejectionBoundPoly(secretSeed, eta, uint16(i+dimensions))
+		v[i].RejectionBoundPoly(secretSeed, eta, uint16(i+L))
 	}
 }
 
@@ -80,33 +80,17 @@ func (v Vec) Decompose(alpha int) (Vec, Vec) {
 	return v1, v2
 }
 
-func (v Vec) PackS1LeqEta(buf []byte, L int, Eta uint32, DoubleEtaBits, PolyLeqEtaSize int) {
+func (v Vec) PackLeqEta(buf []byte, dim int, Eta uint32, DoubleEtaBits, PolyLeqEtaSize int) {
 	offset := 0
-	for i := 0; i < L; i++ {
+	for i := 0; i < dim; i++ {
 		v[i].PackLeqEta(buf[offset:], Eta, DoubleEtaBits, PolyLeqEtaSize)
 		offset += PolyLeqEtaSize
 	}
 }
 
-func (v Vec) UnpackS1LeqEta(buf []byte, L int, Eta uint32, DoubleEtaBits, PolyLeqEtaSize int) {
+func (v Vec) UnpackLeqEta(buf []byte, dim int, Eta uint32, DoubleEtaBits, PolyLeqEtaSize int) {
 	offset := 0
-	for i := 0; i < L; i++ {
-		v[i].UnpackLeqEta(buf[offset:], Eta, DoubleEtaBits, PolyLeqEtaSize)
-		offset += PolyLeqEtaSize
-	}
-}
-
-func (v Vec) PackS2LeqEta(buf []byte, K int, Eta uint32, DoubleEtaBits, PolyLeqEtaSize int) {
-	offset := 0
-	for i := 0; i < K; i++ {
-		v[i].PackLeqEta(buf[offset:], Eta, DoubleEtaBits, PolyLeqEtaSize)
-		offset += PolyLeqEtaSize
-	}
-}
-
-func (v Vec) UnpackS2LeqEta(buf []byte, K int, Eta uint32, DoubleEtaBits, PolyLeqEtaSize int) {
-	offset := 0
-	for i := 0; i < K; i++ {
+	for i := 0; i < dim; i++ {
 		v[i].UnpackLeqEta(buf[offset:], Eta, DoubleEtaBits, PolyLeqEtaSize)
 		offset += PolyLeqEtaSize
 	}

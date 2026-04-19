@@ -167,13 +167,18 @@ func (l Level) L() int {
 	}
 }
 
-func ParamFor(l Level) Params {
+func ParamsFor(l Level) Params {
 	switch l {
 	case Level2, Level3, Level5:
 		return Params{l.WithConstants(), l.String()}
 	default:
 		panic("invalid dilithium security level")
 	}
+}
+
+func WithDilithiumConfigs(l Level) *Dilithium {
+	params := ParamsFor(l)
+	return &Dilithium{Params: params}
 }
 
 // NewPolyVec allocates a polynomial vector of dimension K appropriate for the given security level.

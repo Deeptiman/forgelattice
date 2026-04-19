@@ -4,6 +4,6 @@ import (
 	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/dsa"
 )
 
-type PrivateKey dsa.PrivateKey
+type PrivateKey *dsa.PrivateKey
 
-type PublicKey dsa.PublicKey
+type PublicKey *dsa.PublicKey

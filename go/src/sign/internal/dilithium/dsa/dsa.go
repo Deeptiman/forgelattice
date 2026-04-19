@@ -2,6 +2,7 @@ package dsa
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"github.com/Deeptiman/forgekey/go/src/sha3"
 	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/common"
 	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/poly"
@@ -17,11 +18,6 @@ type signature struct {
 	z    poly.Vec
 	hint poly.Vec
 	c    []byte
-}
-
-func D(l Level) *Dilithium {
-	params := ParamFor(l)
-	return &Dilithium{Params: params}
 }
 
 func (d *Dilithium) GenerateKeyPair(seed [common.SeedSize]byte) (*PublicKey, *PrivateKey) {
@@ -58,7 +54,7 @@ func (d *Dilithium) GenerateKeyPair(seed [common.SeedSize]byte) (*PublicKey, *Pr
 	copy(pk.A, sk.A)
 
 	sk.s1.ExpandS1(&secretSeed, d.Eta)
-	sk.s2.ExpandS2(&secretSeed, d.Eta)
+	sk.s2.ExpandS2(&secretSeed, d.Eta, d.L)
 
 	sk.s1NTT = make(poly.Vec, d.L)
 	for i := range sk.s1 {
@@ -111,7 +107,7 @@ func (d *Dilithium) GenerateKeyPair(seed [common.SeedSize]byte) (*PublicKey, *Pr
 	return &pk, &sk
 }
 
-func (sk *PrivateKey) GetPublicKey(K, L int) *PublicKey {
+func (d *Dilithium) GetPublicKey(K, L int, sk *PrivateKey) *PublicKey {
 	pk := &PublicKey{
 		rho: sk.rho,
 		A:   sk.A,
@@ -140,11 +136,10 @@ func (sk *PrivateKey) GetPublicKey(K, L int) *PublicKey {
 	return pk
 }
 
-func (d *Dilithium) SignInternal(secretBytes []byte, msgBytes [8]byte) []byte {
+func (d *Dilithium) Sign(secretBytes []byte, msgBytes []byte, rnd [32]byte) []byte {
 	var mu, rhop [64]byte
-	var rnd [32]byte
 
-	sk := d.UnMarshalPrivateKey(secretBytes)
+	sk := d.UnmarshalPrivateKey(secretBytes)
 
 	// compute mu
 	h := sha3.NewShake256()
@@ -253,8 +248,8 @@ func (d *Dilithium) SignInternal(secretBytes []byte, msgBytes [8]byte) []byte {
 	return nil
 }
 
-func (d *Dilithium) VerifyInternal(publicBytes, signatureBytes []byte, msgBytes [8]byte) bool {
-	pk := d.UnMarshalPublicKey(publicBytes)
+func (d *Dilithium) Verify(publicBytes, signatureBytes []byte, msgBytes []byte) bool {
+	pk := d.UnmarshalPublicKey(publicBytes)
 	if pk == nil {
 		return false
 	}
@@ -356,6 +351,18 @@ func (d *Dilithium) ExpandMask(seed *[64]byte, k int) poly.Vec {
 	return y
 }
 
+func (d *Dilithium) Scheme() string {
+	return d.Name
+}
+
+func (d *Dilithium) IsPublicKeyValid(srcPk, targetPk *PublicKey) bool {
+	return srcPk.Equal(d.K, targetPk)
+}
+
+func (d *Dilithium) IsPrivateKeyValid(srcSk, targetSk *PrivateKey) bool {
+	return srcSk.Equal(d.K, d.L, targetSk)
+}
+
 func (pk *PublicKey) Equal(K int, other *PublicKey) bool {
 	for i := 0; i < K; i++ {
 		if pk.rho != other.rho && pk.t1[i] != other.t1[i] {
@@ -363,4 +370,20 @@ func (pk *PublicKey) Equal(K int, other *PublicKey) bool {
 		}
 	}
 	return true
+}
+
+func (sk *PrivateKey) Equal(K, L int, other *PrivateKey) bool {
+	ret := subtle.ConstantTimeCompare(sk.rho[:], other.rho[:]) &
+		subtle.ConstantTimeCompare(sk.key[:], other.key[:]) &
+		subtle.ConstantTimeCompare(sk.tr[:], other.tr[:])
+
+	acc := uint32(0)
+	for i := 0; i < L; i++ {
+		acc |= sk.s1[i].Accumulator(&other.s1[i])
+	}
+	for i := 0; i < K; i++ {
+		acc |= sk.s2[i].Accumulator(&other.s2[i])
+		acc |= sk.t0[i].Accumulator(&other.t0[i])
+	}
+	return (ret & subtle.ConstantTimeEq(int32(acc), 0)) == 1
 }
