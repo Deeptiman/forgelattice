@@ -1,12 +1,12 @@
 package reduction
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/prime"
 	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/common"
+	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/mathutils"
 )
 
 func computeDilithiumRedConstant(q uint64) uint32 {
-	return (^prime.ModInverse32(uint32(q))) + 1
+	return (^mathutils.ModInverse32(uint32(q))) + 1
 }
 
 func MontgomeryMul(a, b uint32) uint32 {
