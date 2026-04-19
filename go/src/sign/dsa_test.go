@@ -20,13 +20,13 @@ func TestSignThenVerifyAndPkSkPacking(t *testing.T) {
 				for j := 0; j < 10; j++ {
 					t.Run(fmt.Sprintf("signAndverify=%s-%d-%d", l.String(), i, j), func(t *testing.T) {
 						skBytes := d.MarshalPrivateKey(sk)
-						var msgBytes []byte
+						var msgBytes [8]byte
 						binary.LittleEndian.PutUint64(msgBytes[:], uint64(i+j))
-						var rnd [32]byte
-						sigBytes := d.Sign(skBytes, msgBytes, rnd)
+						var rnd [32]byte // deterministic randomness.
+						sigBytes := d.Sign(skBytes, msgBytes[:], rnd)
 						pkBytes := d.MarshalPublicKey(pk)
 						assert.NotNil(t, pkBytes)
-						assert.True(t, d.Verify(pkBytes, sigBytes, msgBytes))
+						assert.True(t, d.Verify(pkBytes, sigBytes, msgBytes[:]))
 					})
 				}
 			}
