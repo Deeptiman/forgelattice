@@ -13,7 +13,7 @@ func (d *Dilithium) MarshalPublicKey(pk *PublicKey) []byte {
 	return buf
 }
 
-func (d *Dilithium) UnMarshalPublicKey(buf []byte) *PublicKey {
+func (d *Dilithium) UnmarshalPublicKey(buf []byte) *PublicKey {
 	var pk PublicKey
 	pk.t1Encode = make([]byte, common.PolyT1PackSize*d.K)
 	copy(pk.rho[:], buf[:32])
@@ -38,26 +38,29 @@ func (d *Dilithium) MarshalPrivateKey(sk *PrivateKey) []byte {
 	copy(buf[32:64], sk.key[:])
 	copy(buf[64:64+common.TRSize], sk.tr[:])
 	offset := 64 + common.TRSize
-	sk.s1.PackS1LeqEta(buf[offset:], d.L, uint32(d.Eta), d.DoubleEtaBits, d.PolyLeqEtaSize)
+	sk.s1.PackLeqEta(buf[offset:], d.L, uint32(d.Eta), d.DoubleEtaBits, d.PolyLeqEtaSize)
 	offset += d.PolyLeqEtaSize * d.L
-	sk.s2.PackS1LeqEta(buf[offset:], d.K, uint32(d.Eta), d.DoubleEtaBits, d.PolyLeqEtaSize)
+	sk.s2.PackLeqEta(buf[offset:], d.K, uint32(d.Eta), d.DoubleEtaBits, d.PolyLeqEtaSize)
 	offset += d.PolyLeqEtaSize * d.K
 	sk.t0.PackT0(buf[offset:], d.K)
 	return buf
 }
 
-func (d *Dilithium) UnMarshalPrivateKey(buf []byte) *PrivateKey {
+func (d *Dilithium) UnmarshalPrivateKey(buf []byte) *PrivateKey {
 	var sk PrivateKey
 	copy(sk.rho[:], buf[:32])
 	copy(sk.key[:], buf[32:64])
 	copy(sk.tr[:], buf[64:64+common.TRSize])
+
 	offset := 64 + common.TRSize
 	sk.s1 = make(poly.Vec, d.L)
-	sk.s1.UnpackS1LeqEta(buf[offset:], d.L, uint32(d.Eta), d.DoubleEtaBits, d.PolyLeqEtaSize)
+	sk.s1.UnpackLeqEta(buf[offset:], d.L, uint32(d.Eta), d.DoubleEtaBits, d.PolyLeqEtaSize)
 	offset += d.PolyLeqEtaSize * d.L
+
 	sk.s2 = make(poly.Vec, d.K)
-	sk.s2.UnpackS2LeqEta(buf[offset:], d.K, uint32(d.Eta), d.DoubleEtaBits, d.PolyLeqEtaSize)
+	sk.s2.UnpackLeqEta(buf[offset:], d.K, uint32(d.Eta), d.DoubleEtaBits, d.PolyLeqEtaSize)
 	offset += d.PolyLeqEtaSize * d.K
+
 	sk.t0 = make(poly.Vec, d.K)
 	sk.t0.UnpackT0(buf[offset:], d.K)
 

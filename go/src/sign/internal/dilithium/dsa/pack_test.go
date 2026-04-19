@@ -1,7 +1,6 @@
 package dsa
 
 import (
-	"fmt"
 	"github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/poly"
 	"testing"
 )
@@ -12,12 +11,12 @@ func TestPolyPackLeGamma1(t *testing.T) {
 	var seed [64]byte
 	var buf [PolyLeGamma1Size]byte
 
-	d := &Dilithium{Params: ParamFor(Level2)}
+	d := &Dilithium{Params: ParamsFor(Level2)}
 	y := make(poly.Vec, d.L)
 	var yNonce uint16
 	for i := 0; i < d.L; i++ {
 		y[i].DeriveUniformLeGamma1(d.Gamma1Bits, d.PolyLeGamma1Size, &seed, yNonce+uint16(i))
-		//y[i].ReduceWithModQ()
+		y[i].ReduceWithModQ()
 
 		y[i].BitPack(buf[:], d.Gamma1Bits, d.PolyLeGamma1Size)
 		p1 = y[i]
@@ -26,10 +25,4 @@ func TestPolyPackLeGamma1(t *testing.T) {
 			t.Fatalf("%v != %v", y[i], p1)
 		}
 	}
-
-	yNTT := y
-	for i := 0; i < d.L; i++ {
-		yNTT[i].NTT()
-	}
-	fmt.Println("yh=", yNTT)
 }

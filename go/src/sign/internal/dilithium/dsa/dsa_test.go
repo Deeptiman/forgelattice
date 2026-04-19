@@ -15,23 +15,48 @@ func TestPublicFromPrivate(t *testing.T) {
 	for _, l := range []Level{Level2, Level3, Level5} {
 		t.Run(fmt.Sprintf("%s", l.String()), func(t *testing.T) {
 			for i := 0; i < 100; i++ {
-				d := D(l)
+				d := WithDilithiumConfigs(l)
 				var seed [common.SeedSize]byte
 				binary.LittleEndian.PutUint64(seed[:], uint64(i))
 				pk, sk := d.GenerateKeyPair(seed)
 				publicKeyBytes := d.MarshalPublicKey(pk)
-				pk1 := d.UnMarshalPublicKey(publicKeyBytes)
+				pk1 := d.UnmarshalPublicKey(publicKeyBytes)
 				assert.Equal(t, pk.A, pk1.A)
 				assert.Equal(t, pk.rho, pk1.rho)
 				secretKeyBytes := d.MarshalPrivateKey(sk)
-				sk2 := d.UnMarshalPrivateKey(secretKeyBytes)
+				sk2 := d.UnmarshalPrivateKey(secretKeyBytes)
 				assert.Equal(t, sk.s1NTT, sk2.s1NTT)
 				assert.Equal(t, sk.s2NTT, sk2.s2NTT)
 				assert.Equal(t, sk.t0NTT, sk2.t0NTT)
-				pk2 := sk2.GetPublicKey(d.K, d.L)
+				pk2 := d.GetPublicKey(d.K, d.L, sk2)
 				if !pk.Equal(d.K, pk2) {
 					t.Fatal()
 				}
+			}
+		})
+	}
+}
+
+func TestGenerateKeyWithSeed(t *testing.T) {
+	for _, l := range []Level{Level2} {
+		t.Run(fmt.Sprintf("%s", l.String()), func(t *testing.T) {
+			d := WithDilithiumConfigs(l)
+			//seed := [common.SeedSize]byte{34, 57, 51, 101, 102, 50, 101, 54, 101, 102, 49, 102, 98, 48, 56, 57, 57, 57, 100, 49, 52, 50, 97, 98, 101, 48, 50, 57, 53, 52, 56, 50}
+			seed := [common.SeedSize]byte{147, 239, 46, 110, 241, 251, 8, 153, 157, 20, 42, 190, 2, 149, 72, 35, 112, 211, 244, 59, 219, 37, 74, 120, 226, 176, 213, 22, 142, 202, 6, 95}
+			pk, sk := d.GenerateKeyPair(seed)
+			publicKeyBytes := d.MarshalPublicKey(pk)
+			fmt.Println("pkBytes = ", publicKeyBytes)
+			pk1 := d.UnmarshalPublicKey(publicKeyBytes)
+			assert.Equal(t, pk.A, pk1.A)
+			assert.Equal(t, pk.rho, pk1.rho)
+			secretKeyBytes := d.MarshalPrivateKey(sk)
+			sk2 := d.UnmarshalPrivateKey(secretKeyBytes)
+			assert.Equal(t, sk.s1NTT, sk2.s1NTT)
+			assert.Equal(t, sk.s2NTT, sk2.s2NTT)
+			assert.Equal(t, sk.t0NTT, sk2.t0NTT)
+			pk2 := d.GetPublicKey(d.K, d.L, sk2)
+			if !pk.Equal(d.K, pk2) {
+				t.Fatal()
 			}
 		})
 	}
@@ -128,13 +153,7 @@ func TestSHA3_256_withDeterministicSeed(t *testing.T) {
 	h.Read(buf[:])
 
 	expectedBuf := []byte{62, 103, 97, 131, 130, 225, 137, 9, 140, 201, 214, 4, 169, 224, 50, 33, 80, 92, 143, 254, 56, 98, 45, 122, 101, 8, 95, 58, 201, 93, 169, 104, 166, 179, 189, 33, 44, 169, 166, 94, 58, 157, 59, 252, 14, 15, 78, 12, 214, 235, 114, 14, 126, 90, 205, 226, 172, 29, 62, 181, 119, 221, 244, 193, 141, 127, 254, 12, 217, 103, 21, 183, 249, 119, 174, 201, 169, 172, 172, 5, 68, 159, 53, 200, 142, 164, 125, 220, 179, 167, 35, 136, 98, 252, 19, 34, 26, 151, 177, 127, 16, 6, 61, 70, 186, 147, 49, 179, 137, 155, 123, 39, 233, 106, 147, 77, 117, 124, 203, 17, 207, 17, 224, 219, 197, 213, 145, 188, 204, 150, 138, 183, 89, 137, 243, 180, 81, 204, 174, 20, 22, 125, 94, 173, 111, 1, 35, 81, 231, 207, 6, 49, 89, 26, 184, 44, 58, 59, 81, 204, 159, 9, 58, 199, 200, 59, 181, 67, 76, 169, 145, 19, 194, 180, 83, 144, 109, 202, 72, 126, 77, 59, 182, 209, 178, 228, 230, 176, 21, 119, 147, 28, 246, 63, 154, 185, 63, 181, 164, 192, 5, 182, 132, 165, 182, 28, 237, 73, 228, 111, 85, 167, 246, 62, 119, 169, 94, 104, 253, 42, 34, 248, 188, 31, 83, 113, 212, 209, 85, 176, 158, 176, 45, 83, 92, 138, 229, 1, 222, 21, 61, 186, 12, 137, 91, 37, 234, 163, 126, 177, 4, 139, 174, 245, 207, 157, 237, 187, 30, 213, 199, 203, 238, 12, 83, 139, 69, 17, 62, 248, 221, 181, 73, 200, 2, 191, 139, 145, 179, 43, 111, 226, 124, 145, 184, 159, 148, 118, 32, 101, 176, 136, 30, 125, 15, 60, 17, 124, 62, 75, 229, 107, 182, 118, 154, 111, 68, 180, 197, 198, 22, 227, 154, 8, 13, 12, 27, 217, 180, 230, 100, 70, 225, 185, 107, 197, 64, 50, 50, 133, 49, 101, 131, 202, 159, 24, 252, 45, 145, 241, 143, 140, 18, 14, 244, 169, 131, 158, 254, 88, 142, 86, 118, 200, 33, 155, 87, 251, 126, 233, 166, 27, 109, 65, 191, 255, 47, 20, 116, 143, 110, 16, 53, 78, 17, 104, 237, 147, 11, 162, 249, 171, 60, 5, 167, 151, 87, 140, 196, 32, 94, 115, 50, 203, 210, 218, 173, 249, 16, 187, 13, 110, 151, 115, 57, 176, 110, 67, 114, 101, 219, 83, 178, 175, 157, 92, 91, 227, 186, 251, 129, 221, 20, 223, 181, 78, 251, 57, 173, 230, 97, 241, 206, 93, 241, 252, 14, 211, 222, 227, 63, 204, 245, 206, 243, 10, 40, 154, 210, 174, 106, 9, 12, 4, 163, 4, 63, 242, 54, 197, 95, 241, 241, 189, 197, 255, 91, 98, 59, 115, 113, 211, 154, 210, 99, 186, 26, 167, 113, 80, 103, 235, 251, 249, 80, 242, 154, 31, 1, 56, 17, 231, 126, 9, 226, 75, 210, 246, 241, 24, 231, 249, 7, 216, 143, 233, 31, 201, 236, 43, 186, 131, 156, 15, 178, 158, 33, 59, 203, 166, 168, 66, 31, 31, 134, 240, 94, 204, 117, 155, 28, 237, 150, 160, 66, 205, 52, 118, 25, 13, 50, 175, 13, 105, 70, 235, 139, 255, 73, 250, 109, 106, 103, 59, 170, 158, 222, 54, 160, 42, 13, 44, 228, 56, 203, 203, 14, 253, 161, 54, 193, 162, 227, 31, 155, 90}
-	//assert.Equal(t, expectedBuf, buf)
-
-	if reflect.DeepEqual(expectedBuf, buf) {
-		t.Log("[SHA3] PASSED....")
-	} else {
-		t.Log("[SHA3] FAILED....")
-	}
+	assert.Equal(t, expectedBuf, buf)
 }
 
 func TestSignThenVerifyAndPkSkPacking(t *testing.T) {
@@ -142,7 +161,7 @@ func TestSignThenVerifyAndPkSkPacking(t *testing.T) {
 		t.Run(fmt.Sprintf("%s", l.String()), func(t *testing.T) {
 			for i := 0; i < 10; i++ {
 				var seed [common.SeedSize]byte
-				d := D(l)
+				d := WithDilithiumConfigs(l)
 				binary.LittleEndian.PutUint64(seed[:], uint64(i))
 				pk, sk := d.GenerateKeyPair(seed)
 				for j := 0; j < 10; j++ {
@@ -150,12 +169,13 @@ func TestSignThenVerifyAndPkSkPacking(t *testing.T) {
 						skBytes := d.MarshalPrivateKey(sk)
 						var msgBytes [8]byte
 						binary.LittleEndian.PutUint64(msgBytes[:], uint64(i+j))
-						sigBytes := d.SignInternal(skBytes, msgBytes)
+						var rnd [32]byte
+						sigBytes := d.Sign(skBytes, msgBytes[:], rnd)
 						sig := d.sigDecode(sigBytes)
 						assert.NotNil(t, sig)
 						pkBytes := d.MarshalPublicKey(pk)
 						assert.NotNil(t, pkBytes)
-						assert.True(t, d.VerifyInternal(pkBytes, sigBytes, msgBytes))
+						assert.True(t, d.Verify(pkBytes, sigBytes, msgBytes[:]))
 					})
 				}
 			}
