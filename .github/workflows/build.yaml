@@ -27,14 +27,14 @@ jobs:
       - name: Test Kyber Key Generation, Encapsulation, Decapsulation
         run: go test -count=1 -v -race -cover ./kem/...
 
-      - name: Test SHA3 (race + coverage)
+      - name: Test SHA3
         run: go test -count=1 -v -race -cover ./sha3/...
 
       - name: Test Dilithium Signature & Verify
         run: go test -count=1 -v -race -cover ./sign/...
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     if: github.event_name == 'pull_request'   # only on PRs
 
     defaults:
