@@ -11,7 +11,6 @@ import (
 	"compress/flate"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"github.com/Deeptiman/forgekey/go/src/sha3/keccak"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
@@ -230,6 +229,5 @@ func TestHelloWorldHash(t *testing.T) {
 		msgBytes := []byte(msg)
 		s.Write(msgBytes)
 		s.Read(h[:])
-		fmt.Println("Paradigm = ", paradigm, " - hashBlocks = ", h)
 	}
 }

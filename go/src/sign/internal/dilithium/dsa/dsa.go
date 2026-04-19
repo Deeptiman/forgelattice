@@ -57,15 +57,11 @@ func (d *Dilithium) GenerateKeyPair(seed [common.SeedSize]byte) (*PublicKey, *Pr
 	sk.s2.ExpandS2(&secretSeed, d.Eta, d.L)
 
 	sk.s1NTT = make(poly.Vec, d.L)
-	for i := range sk.s1 {
-		sk.s1NTT[i] = sk.s1[i]
-	}
+	sk.s1NTT = sk.s1.Copy()
 	sk.s1NTT.NTT()
 
 	sk.s2NTT = make(poly.Vec, d.K)
-	for i := range sk.s2 {
-		sk.s2NTT[i] = sk.s2[i]
-	}
+	sk.s2NTT = sk.s2.Copy()
 	sk.s2NTT.NTT()
 
 	// t <--- NTT⁻¹(A ∘ NTT(s₁)) + s₂
@@ -270,9 +266,7 @@ func (d *Dilithium) Verify(publicBytes, signatureBytes []byte, msgBytes []byte) 
 	ch.NTT()
 
 	zNTT := make(poly.Vec, len(sig.z))
-	for i := range sig.z {
-		zNTT[i] = sig.z[i]
-	}
+	zNTT = sig.z.Copy()
 	zNTT.NTT()
 
 	Az := make(poly.Vec, d.K)
