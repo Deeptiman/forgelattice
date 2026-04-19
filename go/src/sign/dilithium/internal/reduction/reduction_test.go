@@ -14,18 +14,18 @@ func TestModRed_computeDilithiumRedConstant(t *testing.T) {
 	assert.Equal(t, qInv, uint32(0xfc7fdfff)) // qInv = 4236238847
 }
 
-func TestModRed_MontgomeryEncodeWithDilithium(t *testing.T) {
+func TestModRed_MontgomeryEncode(t *testing.T) {
 	oneEnc := uint32((1 << 32) % uint64(common.Q))
 	assert.Equal(t, uint32(4193792), oneEnc)
-	assert.Equal(t, MontgomeryMul(uint32(oneEnc), uint32(oneEnc)), uint32(oneEnc))
+	assert.Equal(t, MontgomeryMul(oneEnc, oneEnc), oneEnc)
 
 	qm1 := uint32(common.Q - 1)
 	qm1Enc := uint32((uint64(qm1) * (1 << 32)) % common.Q)
-	prod := MontgomeryMul(uint32(qm1Enc), uint32(qm1Enc))
+	prod := MontgomeryMul(qm1Enc, qm1Enc)
 	assert.Equal(t, MontgomeryMul(prod, 1), uint32(1))
 }
 
-func TestModRed_MontgomeryMulWithDilithium(t *testing.T) {
+func TestModRed_MontgomeryMul(t *testing.T) {
 	for i := 0; i < 200; i++ {
 		t.Run(fmt.Sprintf("Montgomery(DSA)-Test=%d", i), func(t *testing.T) {
 			t.Parallel()
