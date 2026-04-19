@@ -2,8 +2,9 @@ name: Go Crypto CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, dev-go-version ]
   pull_request:
+    branches: [ main, dev-go-version ]
 
 jobs:
   test:
