@@ -1,6 +1,6 @@
 package common
 
-import "github.com/Deeptiman/forgekey/go/src/prime"
+import "github.com/Deeptiman/forgekey/go/src/sign/internal/dilithium/mathutils"
 
 const (
 	N                     = 256
@@ -17,4 +17,4 @@ const (
 	TRSize                = 64
 )
 
-var QInv = (^prime.ModInverse32(uint32(Q))) + 1
+var QInv = (^mathutils.ModInverse32(uint32(Q))) + 1
