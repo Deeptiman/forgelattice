@@ -1,7 +1,7 @@
 package poly
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/common"
 )
 
 func (p *Poly) BitUnpack(buf []byte, gammaBits, polyLeGamma1Size int) {

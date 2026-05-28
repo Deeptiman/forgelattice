@@ -2,7 +2,7 @@ package common
 
 import (
 	cryptRand "crypto/rand"
-	"github.com/Deeptiman/forgekey/go/src/sha3"
+	"github.com/Deeptiman/forgelattice/go/src/sha3"
 	"io"
 )
 

@@ -1,9 +1,9 @@
 package dsa
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/sha3"
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/common"
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/poly"
+	"github.com/Deeptiman/forgelattice/go/src/sha3"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/poly"
 )
 
 func (d *Dilithium) MarshalPublicKey(pk *PublicKey) []byte {

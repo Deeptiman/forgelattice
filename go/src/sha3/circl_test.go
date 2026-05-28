@@ -11,7 +11,7 @@ import (
 	"compress/flate"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/Deeptiman/forgekey/go/src/sha3/keccak"
+	"github.com/Deeptiman/forgelattice/go/src/sha3/keccak"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"os"

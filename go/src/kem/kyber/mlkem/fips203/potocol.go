@@ -3,9 +3,9 @@ package fips203
 import (
 	"bytes"
 	"crypto/subtle"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/common"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/cpapke"
-	"github.com/Deeptiman/forgekey/go/src/sha3"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/cpapke"
+	"github.com/Deeptiman/forgelattice/go/src/sha3"
 )
 
 // New initializes an ML-KEM protocol instance for a given Kyber security level.

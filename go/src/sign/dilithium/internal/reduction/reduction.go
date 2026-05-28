@@ -1,8 +1,8 @@
 package reduction
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/common"
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/mathutils"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/mathutils"
 )
 
 func computeDilithiumRedConstant(q uint64) uint32 {

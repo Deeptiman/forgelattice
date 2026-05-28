@@ -2,8 +2,8 @@ package cpapke
 
 import (
 	"fmt"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/common"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/poly"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/poly"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

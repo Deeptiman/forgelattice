@@ -3,8 +3,8 @@ package kem
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/cpapke"
-	"github.com/Deeptiman/forgekey/go/src/sha3"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/cpapke"
+	"github.com/Deeptiman/forgelattice/go/src/sha3"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"

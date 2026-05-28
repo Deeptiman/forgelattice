@@ -1,6 +1,6 @@
 package reduction
 
-import "github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/common"
+import "github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/common"
 
 // MontgomeryMul computes a . b . R⁻¹ mod Q using 16-bit Montgomery reduction.
 //

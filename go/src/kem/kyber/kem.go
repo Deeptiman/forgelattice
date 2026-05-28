@@ -1,8 +1,8 @@
 package kem
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/cpapke"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/mlkem/fips203"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/cpapke"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/mlkem/fips203"
 )
 
 type API interface {

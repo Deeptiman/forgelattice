@@ -1,4 +1,4 @@
-module github.com/Deeptiman/forgekey/go/src
+module github.com/Deeptiman/forgelattice/go/src
 
 go 1.24.3
 
