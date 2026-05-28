@@ -21,7 +21,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: go/src
+        working-directory: go/crypto
 
     steps:
       - name: Checkout
@@ -34,14 +34,14 @@ jobs:
           cache: true
 
       - name: Kyber Key Generation, Encapsulation, Decapsulation
-        run: go test -count=1 -v -race -cover ./kem/...
+        run: go test -count=1 -v -race -cover ./crypto/kem/...
 
   SHA3-Test:
     runs-on: ubuntu-24.04-arm
 
     defaults:
       run:
-        working-directory: go/src
+        working-directory: go/crypto
 
     steps:
       - name: Checkout
@@ -54,14 +54,14 @@ jobs:
           cache: true
 
       - name: SHA3 [SHAKE128, SHAKE256]
-        run: go test -count=1 -v -race -cover ./sha3/...
+        run: go test -count=1 -v -race -cover ./crypto/sha3/...
 
   SIGN-AND-VERIFY-Test:
     runs-on: ubuntu-24.04-arm
 
     defaults:
       run:
-        working-directory: go/src
+        working-directory: go/crypto
 
     steps:
       - name: Checkout
@@ -74,7 +74,7 @@ jobs:
           cache: true
 
       - name: Dilithium Signature Generation & Verify
-        run: go test -count=1 -v -race -cover ./sign/...
+        run: go test -count=1 -v -race -cover ./crypto/sign/...
 
   Code-Lint:
     runs-on: ubuntu-24.04-arm
@@ -82,7 +82,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: go/src
+        working-directory: go/crypto
 
     steps:
       - name: Checkout
