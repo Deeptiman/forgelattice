@@ -1,4 +1,0 @@
-ghdl -a src/led_blink.vhd tb/led_blink_tb.vhd
-ghdl -e led_blink_tb
-ghdl -r led_blink_tb --wave=waveforms/led_blink.ghw --stop-time=2sec
-gtkwave waveforms/led_blink.ghw &
