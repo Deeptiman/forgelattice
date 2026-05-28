@@ -58,24 +58,13 @@ func (p *Kyber) GenerateKeyPair(seed []byte) *Kyber {
 	for i := 0; i < p.K; i++ {
 		p.sk.s[i].SampleNoise(sigma[:], uint8(i), p.Eta1)
 	}
-
-	for i := 0; i < p.K; i++ {
-		p.sk.s[i].NTT()
-	}
-
-	for i := 0; i < p.K; i++ {
-		p.sk.s[i].Reduce()
-	}
+	p.sk.s.NTT()
+	p.sk.s.Reduce()
 
 	eh := make(poly.Vec, p.K)
 	// 4. Sample error vector (e) using CBD as input seed sigma and nonce (K+i).
-	for i := 0; i < p.K; i++ {
-		eh[i].SampleNoise(sigma[:], uint8(p.K)+uint8(i), p.Eta1)
-	}
-
-	for i := 0; i < p.K; i++ {
-		eh[i].NTT()
-	}
+	eh.SampleNoise(sigma[:], p.K, p.Eta1)
+	eh.NTT()
 
 	// 5. Compute t = A * s + e
 	p.pk.t = make(poly.Vec, p.K)
@@ -91,13 +80,8 @@ func (p *Kyber) GenerateKeyPair(seed []byte) *Kyber {
 	}
 
 	// 5.1 Add the error vector (e) to (t)
-	for i := 0; i < p.K; i++ {
-		p.pk.t[i].Add(eh[i])
-	}
-
-	for i := 0; i < p.K; i++ {
-		p.pk.t[i].Reduce() // Do final reduction to the computed (t).
-	}
+	p.pk.t.Add(eh)
+	p.pk.t.Reduce() // Do final reduction to the computed (t).
 
 	p.Transpose()
 	return &Kyber{p.Params, p.pk, p.sk}
@@ -144,21 +128,11 @@ func (p *Kyber) Encrypt(ct, pt, seed []byte) {
 	var e2 poly.Poly
 
 	// 1. Sample noise polynomials (r, e1, e2)
-	for i := 0; i < p.K; i++ {
-		rh[i].SampleNoise(seed, uint8(i), p.Eta1)
-	}
+	rh.SampleNoise(seed, 0, p.Eta1)
+	rh.NTT()
+	rh.Reduce()
 
-	for i := 0; i < p.K; i++ {
-		rh[i].NTT()
-	}
-
-	for i := 0; i < p.K; i++ {
-		rh[i].Reduce()
-	}
-
-	for i := 0; i < p.K; i++ {
-		e1[i].SampleNoise(seed, uint8(p.K)+uint8(i), p.Eta2)
-	}
+	e1.SampleNoise(seed, p.K, p.Eta2)
 	e2.SampleNoise(seed, uint8(2*p.K), p.Eta2)
 
 	// 2. Compute u = A^T * r + e1
@@ -171,17 +145,9 @@ func (p *Kyber) Encrypt(ct, pt, seed []byte) {
 		u[i].Add(tmp)
 	}
 
-	for i := 0; i < p.K; i++ {
-		u[i].Reduce()
-	}
-
-	for i := 0; i < p.K; i++ {
-		u[i].InvNTT()
-	}
-
-	for i := 0; i < p.K; i++ {
-		u[i].Add(e1[i])
-	}
+	u.Reduce()
+	u.InvNTT()
+	u.Add(e1)
 
 	// 3. Compute v = t * r + e2 + m
 	var v, m, tmp poly.Poly
@@ -196,9 +162,7 @@ func (p *Kyber) Encrypt(ct, pt, seed []byte) {
 	v.Add(m)
 	v.Add(e2)
 
-	for i := 0; i < p.K; i++ {
-		u[i].Reduce()
-	}
+	u.Reduce()
 	v.Reduce()
 
 	// 4. Compress (u, v) into ciphertext
@@ -230,9 +194,7 @@ func (p *Kyber) Decrypt(pt []byte, ct []byte) {
 	}
 	v.Decompress(p.Dv, ct[p.K*size:])
 
-	for i := 0; i < p.K; i++ {
-		u[i].NTT()
-	}
+	u.NTT()
 
 	var tmp poly.Poly
 	for i := 0; i < p.K; i++ {
