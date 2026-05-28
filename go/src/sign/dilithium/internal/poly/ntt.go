@@ -59,18 +59,6 @@ func PrecomputeInverseZetas() [256]uint32 {
 	return z
 }
 
-func (v Vec) InvNTT() {
-	for i := 0; i < len(v); i++ {
-		v[i].InvNTT()
-	}
-}
-
-func (v Vec) NTT() {
-	for i := 0; i < len(v); i++ {
-		v[i].NTT()
-	}
-}
-
 func (p *Poly) NTT() {
 	m := 0
 	for l := common.N / 2; l > 0; l >>= 1 {

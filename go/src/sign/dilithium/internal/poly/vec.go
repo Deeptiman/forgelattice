@@ -214,6 +214,18 @@ func (v Vec) UnPackHint(buf []byte, omega int) bool {
 	return true
 }
 
+func (v Vec) InvNTT() {
+	for i := 0; i < len(v); i++ {
+		v[i].InvNTT()
+	}
+}
+
+func (v Vec) NTT() {
+	for i := 0; i < len(v); i++ {
+		v[i].NTT()
+	}
+}
+
 func (v Vec) Copy() Vec {
 	u := make(Vec, len(v))
 	for i := range v {
