@@ -1,7 +1,7 @@
 package sha3
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/sha3/keccak"
+	"github.com/Deeptiman/forgelattice/go/src/sha3/keccak"
 )
 
 // SpongePhase represents the current phase of the sponge construction.

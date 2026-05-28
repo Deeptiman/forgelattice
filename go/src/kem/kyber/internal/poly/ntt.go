@@ -1,9 +1,9 @@
 package poly
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/common"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/mathutils"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/reduction"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/mathutils"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/reduction"
 	"math/big"
 )
 

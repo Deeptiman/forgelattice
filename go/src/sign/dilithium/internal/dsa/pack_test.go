@@ -1,7 +1,7 @@
 package dsa
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/poly"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/poly"
 	"testing"
 )
 

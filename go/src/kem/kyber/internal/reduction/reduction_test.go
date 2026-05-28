@@ -2,7 +2,7 @@ package reduction
 
 import (
 	"crypto/rand"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/common"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	mRand "math/rand"

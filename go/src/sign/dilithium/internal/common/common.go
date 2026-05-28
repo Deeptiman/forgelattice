@@ -1,6 +1,6 @@
 package common
 
-import "github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/mathutils"
+import "github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/mathutils"
 
 const (
 	N                     = 256

@@ -1,7 +1,7 @@
 package cpapke
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/poly"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/poly"
 )
 
 // PackPrivateKey serializes the CPA-PKE private key.

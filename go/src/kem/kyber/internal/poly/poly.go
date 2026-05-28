@@ -1,9 +1,9 @@
 package poly
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/common"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/reduction"
-	"github.com/Deeptiman/forgekey/go/src/sha3"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/reduction"
+	"github.com/Deeptiman/forgelattice/go/src/sha3"
 )
 
 const (

@@ -3,7 +3,7 @@ package reduction
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/common"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"

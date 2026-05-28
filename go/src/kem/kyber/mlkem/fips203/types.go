@@ -1,8 +1,8 @@
 package fips203
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/common"
-	"github.com/Deeptiman/forgekey/go/src/kem/kyber/internal/cpapke"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/kem/kyber/internal/cpapke"
 )
 
 // PublicKey represents an ML-KEM public key.

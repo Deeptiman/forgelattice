@@ -1,9 +1,9 @@
 package sign
 
 import (
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/common"
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/internal/dsa"
-	"github.com/Deeptiman/forgekey/go/src/sign/dilithium/mldsa/fips204"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/common"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/internal/dsa"
+	"github.com/Deeptiman/forgelattice/go/src/sign/dilithium/mldsa/fips204"
 )
 
 type API interface {

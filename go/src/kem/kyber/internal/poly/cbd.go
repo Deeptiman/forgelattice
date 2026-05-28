@@ -2,7 +2,7 @@ package poly
 
 import (
 	"encoding/binary"
-	"github.com/Deeptiman/forgekey/go/src/sha3"
+	"github.com/Deeptiman/forgelattice/go/src/sha3"
 )
 
 func (p *Poly) GenerateSecretVectorNoiseWithEta2(seed []byte, noiseBuffer uint8) {
