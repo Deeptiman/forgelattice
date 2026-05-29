@@ -74,7 +74,7 @@ jobs:
           cache: true
 
       - name: Dilithium Signature Generation & Verify
-        run: go test -count=1 -v -race -cover ./sign/...
+        run: go test -count=1 -v -race -cover ./dsa/...
 
   Code-Lint:
     runs-on: ubuntu-24.04-arm

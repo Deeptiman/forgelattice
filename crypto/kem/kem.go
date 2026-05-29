@@ -1,0 +1,58 @@
+package kem
+
+import (
+	"github.com/Deeptiman/forgelattice/crypto/kem/internal/cpapke"
+	"github.com/Deeptiman/forgelattice/crypto/kem/protocol/fips203"
+)
+
+type API interface {
+	Scheme() string
+	GenerateKeyPair(seed []byte) (*fips203.PublicKey, *fips203.PrivateKey)
+	Encapsulate(pk *fips203.PublicKey, seed []byte) (ct []byte, ss []byte)
+	Decapsulate(sk *fips203.PrivateKey, ct []byte) []byte
+
+	PackPrivateKey(sk *fips203.PrivateKey) []byte
+	PackPublicKey(pk *fips203.PublicKey) []byte
+	UnPackPublicKey(keyBytes []byte) *fips203.PublicKey
+	UnPackPrivateKey(keyBytes []byte) *fips203.PrivateKey
+}
+
+type KEM struct {
+	protocol API
+}
+
+func WithFIPS203(lvl Level) API {
+	return &KEM{protocol: fips203.New(cpapke.ToLevel(lvl.String()))}
+}
+
+func (k *KEM) GenerateKeyPair(seed []byte) (*fips203.PublicKey, *fips203.PrivateKey) {
+	return k.protocol.GenerateKeyPair(seed[:])
+}
+
+func (k *KEM) Encapsulate(pk *fips203.PublicKey, seed []byte) (ct []byte, ss []byte) {
+	return k.protocol.Encapsulate(pk, seed)
+}
+
+func (k *KEM) Decapsulate(sk *fips203.PrivateKey, ct []byte) []byte {
+	return k.protocol.Decapsulate(sk, ct)
+}
+
+func (k *KEM) PackPrivateKey(sk *fips203.PrivateKey) []byte {
+	return k.protocol.PackPrivateKey(sk)
+}
+
+func (k *KEM) PackPublicKey(pk *fips203.PublicKey) []byte {
+	return k.protocol.PackPublicKey(pk)
+}
+
+func (k *KEM) UnPackPublicKey(keyBytes []byte) *fips203.PublicKey {
+	return k.protocol.UnPackPublicKey(keyBytes)
+}
+
+func (k *KEM) UnPackPrivateKey(keyBytes []byte) *fips203.PrivateKey {
+	return k.protocol.UnPackPrivateKey(keyBytes)
+}
+
+func (k *KEM) Scheme() string {
+	return k.protocol.Scheme()
+}

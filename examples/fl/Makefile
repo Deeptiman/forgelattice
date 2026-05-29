@@ -1,6 +1,6 @@
-.PHONY: all test lint tidy clean pkgs
+.PHONY: all build lint tidy clean pkgs
 
-all: test-kem test-sha3 test-dsa lint
+all: tidy build lint
 
 ## List all packages
 pkgs:
@@ -11,17 +11,8 @@ tidy:
 	go mod tidy
 	git diff --exit-code
 
-## Test all packages
-test-ml: test-kem test-sha3 test-dsa
-
-test-kem:
-	go test -C crypto -count=1 -v -race -cover ./kem/...
-
-test-sha3:
-	go test -C crypto -count=1 -v -race -cover ./sha3/...
-
-test-dsa:
-	go test -C crypto -count=1 -v -race -cover ./dsa/...
+build:
+	go build -o fl
 
 ## Lint (requires golangci-lint installed)
 LINT_BIN := $(shell go env GOPATH)/bin/golangci-lint
