@@ -31,8 +31,8 @@ func (p *Poly) RejectionSampling(rho *[SeedSize]byte, x, y byte) {
 	// Initialize SHAKE128 as an extendable-output PRF.
 	// The seed rho with x, y indices uniquely determines the output stream.
 	shake := sha3.NewShake128()
-	shake.Write(rho[:])
-	shake.Write([]byte{x, y})
+	_, _ = shake.Write(rho[:])
+	_, _ = shake.Write([]byte{x, y})
 
 	buf := make([]byte, MaxBitRate) // max SHAKE rate block
 	i := 0

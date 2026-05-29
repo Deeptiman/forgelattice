@@ -51,7 +51,7 @@ func (f *Protocol) GenerateKeyPair(seed []byte) (*PublicKey, *PrivateKey) {
 	// Compute hpk = H(Pack(pk))
 	ppk := cpa.PackPublicKey(pk.pk)
 	h := sha3.New256()
-	h.Write(ppk[:])
+	_, _ = h.Write(ppk[:])
 	h.Read(sk.hpk[:])
 	copy(pk.hpk[:], sk.hpk[:])
 	return pk, sk
@@ -68,8 +68,8 @@ func (f *Protocol) Encapsulate(pk *PublicKey, seed []byte) (ct, ss []byte) {
 	// (K', r) = G(m||H(pk))
 	var kr [64]byte
 	g := sha3.New512()
-	g.Write(m[:])
-	g.Write(pk.hpk[:])
+	_, _ = g.Write(m[:])
+	_, _ = g.Write(pk.hpk[:])
 	g.Read(kr[:])
 
 	// c = KYBER.CPAPKE.Enc(pk, m, r)
@@ -91,8 +91,8 @@ func (f *Protocol) Decapsulate(sk *PrivateKey, ct []byte) []byte {
 	// (K', r') = G(m'||H(pk))
 	var kr [64]byte
 	g := sha3.New512()
-	g.Write(m[:])
-	g.Write(sk.hpk[:])
+	_, _ = g.Write(m[:])
+	_, _ = g.Write(sk.hpk[:])
 	g.Read(kr[:])
 
 	// K' = kr[:common.SeedSize:]
@@ -111,8 +111,8 @@ func (f *Protocol) Decapsulate(sk *PrivateKey, ct []byte) []byte {
 	} else {
 		// secret fallback: ss = PRF(z||ct)
 		prf := sha3.NewShake256()
-		prf.Write(sk.z[:])
-		prf.Write(ct[:f.cpa.CiphertextSize])
+		_, _ = prf.Write(sk.z[:])
+		_, _ = prf.Write(ct[:f.cpa.CiphertextSize])
 		prf.Read(ss[:])
 	}
 
@@ -127,7 +127,7 @@ func (f *Protocol) UnPackPublicKey(keyBytes []byte) *PublicKey {
 
 	// public-key hash is recomputed and stored for later use.
 	h := sha3.New256()
-	h.Write(keyBytes)
+	_, _ = h.Write(keyBytes)
 	h.Read(pk.hpk[:])
 
 	return &pk
@@ -151,7 +151,7 @@ func (f *Protocol) UnPackPrivateKey(keyBytes []byte) *PrivateKey {
 	// Recompute the public key hash.
 	var hpk [common.SeedSize]byte
 	h := sha3.New256()
-	h.Write(keyBytes[:f.cpa.PublicKeySize])
+	_, _ = h.Write(keyBytes[:f.cpa.PublicKeySize])
 	h.Read(hpk[:])
 	keyBytes = keyBytes[f.cpa.PublicKeySize:]
 

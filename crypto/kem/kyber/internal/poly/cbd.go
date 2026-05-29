@@ -55,8 +55,8 @@ func (p *Poly) GenerateSecretVectorNoiseWithEta3(seed []byte, noiseBuffer uint8)
 
 	// SHAKE256(seed || nonce)
 	h := sha3.NewShake256()
-	h.Write(seed)
-	h.Write([]byte{noiseBuffer})
+	_, _ = h.Write(seed)
+	_, _ = h.Write([]byte{noiseBuffer})
 
 	// 192-bytes of entropy + 2 bytes zero padding
 	var buf [192 + 2]byte

@@ -42,8 +42,8 @@ func TestStateHash_WithSHAKE256(t *testing.T) {
 
 	s := NewShake256()
 	out := make([]byte, 32)
-	s.Write(k)
-	s.Write(buf)
+	_, _ = s.Write(k)
+	_, _ = s.Write(buf)
 	s.Read(out)
 	assert.Equal(t, "78de2974bd2711d5549ffd32b753ef0f5fa80a0db2556db60f0987eb8a9218ff", hex.EncodeToString(out))
 }
@@ -54,8 +54,8 @@ func TestStateHash_WithSHAKE128(t *testing.T) {
 
 	s := NewShake128()
 	out := make([]byte, 32)
-	s.Write(k)
-	s.Write(buf)
+	_, _ = s.Write(k)
+	_, _ = s.Write(buf)
 	s.Read(out)
 	assert.Equal(t, "8cc1e412dac16d2497d10d8293351f8de537aaea0984b9f5bd0c3faaaf7d9fe5", hex.EncodeToString(out))
 }
@@ -198,7 +198,7 @@ func (s *State) debugCapacity() []uint64 {
 
 func TestCapacityHidden(t *testing.T) {
 	s := NewShake128()
-	s.Write([]byte("Hello World"))
+	_, _ = s.Write([]byte("Hello World"))
 	s.Read(make([]byte, 32))
 
 	capacity := s.debugCapacity()
@@ -227,7 +227,7 @@ func TestHelloWorldHash(t *testing.T) {
 		}
 		h := make([]byte, 64)
 		msgBytes := []byte(msg)
-		s.Write(msgBytes)
+		_, _ = s.Write(msgBytes)
 		s.Read(h[:])
 	}
 }
