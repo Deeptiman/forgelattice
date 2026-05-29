@@ -38,9 +38,8 @@ type SignatureOutput struct {
 }
 
 var rootCmd = &cobra.Command{
-	Short: "Small Module Lattice CLI application using forgelattice library",
-	Long: `Forge Lattice CLI
-A command-line tool to demonstrate and use the ForgeLattice PQC library.`,
+	Short: "fl: ForgeLattice CLI",
+	Long:  `fl (ForgeLattice) -- Post-Quantum Cryptography Command Line Tool`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
