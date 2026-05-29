@@ -1,5 +1,7 @@
 //go:build arm64 && !purego
 
+// Assembly implementation ref: https://github.com/cloudflare/circl/blob/main/sign/internal/dilithium/arm64.s
+
 #include "go_asm.h"
 #include "textflag.h"
 
