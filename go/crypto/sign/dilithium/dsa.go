@@ -2,7 +2,6 @@ package sign
 
 import (
 	"github.com/Deeptiman/forgelattice/go/crypto/sign/dilithium/internal/common"
-	"github.com/Deeptiman/forgelattice/go/crypto/sign/dilithium/internal/dsa"
 	"github.com/Deeptiman/forgelattice/go/crypto/sign/dilithium/mldsa/fips204"
 )
 
@@ -25,8 +24,8 @@ type DSA struct {
 	protocol API
 }
 
-func WithFIPS204(l dsa.Level) API {
-	return &DSA{protocol: fips204.New(l)}
+func WithFIPS204(l Level) API {
+	return &DSA{protocol: fips204.New(l.String())}
 }
 
 func (d *DSA) GenerateKeyPair(seed [common.SeedSize]byte) (fips204.PublicKey, fips204.PrivateKey) {

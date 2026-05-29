@@ -10,7 +10,7 @@ import (
 )
 
 func TestSignThenVerifyAndPkSkPacking(t *testing.T) {
-	for _, l := range []dsa.Level{dsa.Level2, dsa.Level3, dsa.Level5} {
+	for _, l := range []Level{dsa.Level2, dsa.Level3, dsa.Level5} {
 		t.Run(fmt.Sprintf("%s", l.String()), func(t *testing.T) {
 			for i := 0; i < 10; i++ {
 				var seed [common.SeedSize]byte

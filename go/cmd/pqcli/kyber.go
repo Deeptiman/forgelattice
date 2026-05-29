@@ -14,7 +14,7 @@ var kyberCmd = &cobra.Command{
 }
 
 var kyberKeyGenCmd = &cobra.Command{
-	Use:   "kyber_keygen",
+	Use:   "keygen",
 	Short: "Generate Kyber keypair",
 	Long:  `Generate a Kyber keypair using seed material.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -49,21 +49,21 @@ var kyberKeyGenCmd = &cobra.Command{
 }
 
 var kyberEncapsCmd = &cobra.Command{
-	Use:   "kyber_encaps",
+	Use:   "encaps",
 	Short: "Encapsulate (KEM Encaps)",
 	Run: func(cmd *cobra.Command, args []string) {
-		msgHex, _ := cmd.Flags().GetString("msgHex")
-		pkHex, _ := cmd.Flags().GetString("pubkey")
+		msgHex, _ := cmd.Flags().GetString("message")
+		pkHex, _ := cmd.Flags().GetString("pubKey")
 		level, _ := cmd.Flags().GetString("level")
 
 		if msgHex == "" {
-			fmt.Println("Error: --msgHex is required")
+			fmt.Println("Error: --message is required")
 			cmd.Usage()
 			return
 		}
 
 		if pkHex == "" {
-			fmt.Println("Error: --pubkey is required")
+			fmt.Println("Error: --pubKey is required")
 			cmd.Usage()
 			return
 		}
@@ -93,21 +93,21 @@ var kyberEncapsCmd = &cobra.Command{
 }
 
 var kyberDecapsCmd = &cobra.Command{
-	Use:   "kyber_decaps",
+	Use:   "decaps",
 	Short: "Decapsulate (Recover shared secret)",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctHex, _ := cmd.Flags().GetString("ct")
-		skHex, _ := cmd.Flags().GetString("privkey")
+		ctHex, _ := cmd.Flags().GetString("ciphertext")
+		skHex, _ := cmd.Flags().GetString("privKey")
 		level, _ := cmd.Flags().GetString("level")
 
 		if ctHex == "" {
-			fmt.Println("Error: --ct is required")
+			fmt.Println("Error: --ciphertext is required")
 			cmd.Usage()
 			return
 		}
 
 		if skHex == "" {
-			fmt.Println("Error: --privkey is required")
+			fmt.Println("Error: --privKey is required")
 			cmd.Usage()
 			return
 		}
@@ -121,9 +121,6 @@ var kyberDecapsCmd = &cobra.Command{
 		ct := mustHex(ctHex)
 		skBytes := mustHex(skHex)
 
-		fmt.Println("ct=", ct)
-		fmt.Println("skBytes=", skBytes)
-
 		k := kem.WithFIPS203(kem.ToLevel(fmt.Sprintf("ML-KEM-%s", level)))
 		sk := k.UnPackPrivateKey(skBytes)
 		ss := k.Decapsulate(sk, ct)
@@ -134,20 +131,20 @@ var kyberDecapsCmd = &cobra.Command{
 }
 
 func init() {
-	// Keygen flags
+	// KeyGen flags
 	kyberKeyGenCmd.Flags().String("z", "", "Z seed (hex)")
 	kyberKeyGenCmd.Flags().String("d", "", "D seed (hex)")
-	kyberKeyGenCmd.Flags().String("level", "512", "Security level: 512, 768, 1024")
+	kyberKeyGenCmd.Flags().String("level", "512", "Security levels: 512, 768, 1024")
 
-	// Encaps flags
-	kyberEncapsCmd.Flags().String("msgHex", "", "Message (hex)")
-	kyberEncapsCmd.Flags().String("pubkey", "", "Public key (hex)")
-	kyberEncapsCmd.Flags().String("level", "512", "Security level: 512, 768, 1024")
+	// EnCaps flags
+	kyberEncapsCmd.Flags().String("message", "", "Message (hex)")
+	kyberEncapsCmd.Flags().String("pubKey", "", "Public key (hex)")
+	kyberEncapsCmd.Flags().String("level", "512", "Security levels: 512, 768, 1024")
 
-	// Decaps flags
-	kyberDecapsCmd.Flags().String("ct", "", "Ciphertext (hex)")
-	kyberDecapsCmd.Flags().String("privkey", "", "Private key (hex)")
-	kyberDecapsCmd.Flags().String("level", "512", "Security level: 512, 768, 1024")
+	// DeCaps flags
+	kyberDecapsCmd.Flags().String("ciphertext", "", "Ciphertext (hex)")
+	kyberDecapsCmd.Flags().String("privKey", "", "Private key (hex)")
+	kyberDecapsCmd.Flags().String("level", "512", "Security levels: 512, 768, 1024")
 
 	kyberCmd.AddCommand(kyberKeyGenCmd, kyberEncapsCmd, kyberDecapsCmd)
 }

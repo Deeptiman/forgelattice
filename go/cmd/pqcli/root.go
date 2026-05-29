@@ -25,7 +25,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.AddCommand(kyberKeyGenCmd, kyberEncapsCmd, kyberDecapsCmd)
+	rootCmd.AddCommand(kyberCmd, kyberKeyGenCmd, kyberEncapsCmd, kyberDecapsCmd, dilithiumCmd, dilithiumKeyGenCmd, dilithiumSignCmd, dilithiumVerifyCmd)
 }
 
 func mustHex(s string) []byte {

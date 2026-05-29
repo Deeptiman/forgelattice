@@ -9,8 +9,8 @@ type Protocol struct {
 	dsa *dsa.Dilithium
 }
 
-func New(lvl dsa.Level) *Protocol {
-	return &Protocol{dsa: dsa.WithDilithiumConfigs(lvl)}
+func New(lvl string) *Protocol {
+	return &Protocol{dsa: dsa.WithDilithiumConfigs(dsa.ToLevel(lvl))}
 }
 
 func (d *Protocol) GenerateKeyPair(seed [common.SeedSize]byte) (PublicKey, PrivateKey) {
