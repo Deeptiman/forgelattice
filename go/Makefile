@@ -11,9 +11,6 @@ tidy:
 	go mod tidy
 	git diff --exit-code
 
-build:
-	go build -o forgelattice
-
 ## Test all packages
 test-ml: test-kem test-sha3 test-dsa
 
