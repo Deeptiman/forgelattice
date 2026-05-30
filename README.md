@@ -13,7 +13,7 @@ NIST standardized PQC algorithms, designed as a **software service layer** for l
 - Written directly from official NIST specifications. ([FIPS-203](https://pq-crystals.org/kyber/data/kyber-specification-round3.pdf), [FIPS-204](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.204.pdf), [FIPS-202](https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.202.pdf)).
 - Independent research implementation of NIST-standardized Post-Quantum Cryptography.
 - Uses [CIRCL (Cloudflare Interoperable, Reusable Cryptographic Library)](https://github.com/cloudflare/circl) as a trusted reference for validation.
-- Rigorously validated against official **NIST KAT test vectors**.
+- Rigorously validated against official **NIST KAT (Known As Test) test vectors**.
 - Clean, idiomatic Go code with strong emphasis on readability and correctness.
 - Practical CLI tool `fl` included for quick demonstration and usage.
 
