@@ -37,6 +37,12 @@ type SignatureOutput struct {
 	Signature string `json:"signature"`
 }
 
+type VerifyOutput struct {
+	Algorithm string `json:"algorithm"`
+	Level     string `json:"level"`
+	SigState  string `json:"sig_state"`
+}
+
 var rootCmd = &cobra.Command{
 	Short: "fl: ForgeLattice CLI",
 	Long:  `fl (ForgeLattice) -- Post-Quantum Cryptography Command Line Tool`,
