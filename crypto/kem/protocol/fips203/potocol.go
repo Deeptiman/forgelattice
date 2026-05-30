@@ -171,7 +171,16 @@ func (f *Protocol) UnPackPrivateKey(keyBytes []byte) *PrivateKey {
 }
 
 func (f *Protocol) PackPrivateKey(sk *PrivateKey) []byte {
-	return f.cpa.PackPrivateKey(sk.sk)
+	privKeyBuf := f.cpa.PackPrivateKey(sk.sk)
+	pubKeyBuf := f.cpa.PackPublicKey(sk.pk)
+	keySize := f.cpa.PrivateKeySize + f.cpa.PublicKeySize + 64
+
+	buf := make([]byte, keySize)
+	copy(buf[:f.cpa.PrivateKeySize], privKeyBuf)
+	copy(buf[f.cpa.PrivateKeySize:], pubKeyBuf)
+	copy(buf[keySize-64:], sk.hpk[:])
+	copy(buf[keySize-32:], sk.z[:])
+	return buf
 }
 
 func (f *Protocol) PackPublicKey(pk *PublicKey) []byte {

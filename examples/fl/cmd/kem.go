@@ -43,12 +43,14 @@ var kyberKeyGenCmd = &cobra.Command{
 
 		k := kem.WithFIPS203(kem.ToLevel(fmt.Sprintf("ML-KEM-%s", level)))
 		pk, sk := k.GenerateKeyPair(seed[:])
+		ppk := k.PackPublicKey(pk)
+		psk := k.PackPrivateKey(sk)
 		fmt.Println("✅ Kyber KeyGen Successful")
 		output := KeyPairOutput{
 			Algorithm:  "ML-KEM",
 			Level:      level,
-			PublicKey:  hex.EncodeToString(k.PackPublicKey(pk)),
-			PrivateKey: hex.EncodeToString(k.PackPrivateKey(sk)),
+			PublicKey:  strings.ToUpper(hex.EncodeToString(ppk)),
+			PrivateKey: strings.ToUpper(hex.EncodeToString(psk)),
 		}
 		data, _ := json.MarshalIndent(output, "", "  ")
 		fmt.Println(string(data))
@@ -144,7 +146,7 @@ var kyberDecapsCmd = &cobra.Command{
 		output := DecapsOutput{
 			Algorithm:    "ML-KEM",
 			Level:        level,
-			SharedSecret: hex.EncodeToString(ss),
+			SharedSecret: strings.ToUpper(hex.EncodeToString(ss)),
 		}
 		data, _ := json.MarshalIndent(output, "", "  ")
 		fmt.Println(string(data))
@@ -153,8 +155,8 @@ var kyberDecapsCmd = &cobra.Command{
 
 func init() {
 	// KeyGen flags
-	kyberKeyGenCmd.Flags().String("z", "", "Z seed (hex)")
-	kyberKeyGenCmd.Flags().String("d", "", "D seed (hex)")
+	kyberKeyGenCmd.Flags().String("z", "", "(32-bytes seed) Used to generate the public matrix A")
+	kyberKeyGenCmd.Flags().String("d", "", "(32-bytes seed) Used to sample the secret vector (s) and error vector (e)")
 	kyberKeyGenCmd.Flags().String("level", "512", "Security levels: 512, 768, 1024")
 
 	// EnCaps flags
