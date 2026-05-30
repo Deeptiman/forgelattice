@@ -11,8 +11,8 @@ tidy:
 	go mod tidy
 	git diff --exit-code
 
-## Test all packages
-test-ml: test-kem test-sha3 test-dsa
+## Test all crypto packages
+test-all: test-kem test-sha3 test-dsa
 
 test-kem:
 	go test -C crypto -count=1 -v -race -cover ./kem/...
