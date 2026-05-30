@@ -1,11 +1,11 @@
 # ForgeLattice
 
 [![Go Version](https://img.shields.io/badge/Go-1.26-blue.svg)](https://go.dev/blog/go1.26)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/Deeptiman/forgelattice/crypto)](https://pkg.go.dev/github.com/Deeptiman/forgelattice/crypto)
 [![PQC](https://img.shields.io/badge/Post--Quantum-Cryptography-8B00FF.svg)]()
 [![Status](https://img.shields.io/badge/Status-Experimental-orange.svg)]()
 [![Go Report Card](https://goreportcard.com/badge/github.com/Deeptiman/forgelattice/crypto)](https://goreportcard.com/report/github.com/Deeptiman/forgelattice/crypto)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/Deeptiman/forgelattice/crypto)](https://pkg.go.dev/github.com/Deeptiman/forgelattice/crypto)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **An independent open-source research project** on Post-Quantum Cryptography (PQC) in Go. This library provides clean, well-structured implementation of
 NIST standardized PQC algorithms, designed as a **software service layer** for learning, experimentation, integration, and future hardware acceleration research.
