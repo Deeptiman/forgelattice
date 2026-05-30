@@ -7,7 +7,7 @@ pkgs:
 	go list ./...
 
 build-cli:
-	go build -mod=mod -o fl ./examples/fl/main.go
+	go build -mod=mod -o build/fl ./examples/fl/main.go
 
 ## Ensure go.mod is clean
 tidy:
