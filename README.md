@@ -4,6 +4,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PQC](https://img.shields.io/badge/Post--Quantum-Cryptography-8B00FF.svg)]()
 [![Status](https://img.shields.io/badge/Status-Experimental-orange.svg)]()
+[![Go Report Card](https://goreportcard.com/badge/github.com/Deeptiman/forgelattice/crypto)](https://goreportcard.com/report/github.com/Deeptiman/forgelattice/crypto)
 
 **An independent open-source research project** on Post-Quantum Cryptography (PQC) in Go. This library provides clean, well-structured implementation of
 NIST standardized PQC algorithms, designed as a **software service layer** for learning, experimentation, integration, and future hardware acceleration research.
