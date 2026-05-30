@@ -115,7 +115,7 @@ Use " dsa [command] --help" for more information about a command.
 
 ### Installation
 ```
- go get github.com/Deeptiman/forgelattice/crypto
+ go get github.com/Deeptiman/forgelattice
 ```
 
 ### Testing
