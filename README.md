@@ -46,7 +46,7 @@ A simple command line tool to demonstrate practical usage of the library.
 go build -o fl ./examples/fl
 ````
 
-**Examples**
+**`fl` Available Commands**
 `````````bash
 ./fl help                                                                                                                                         git:dev-go-version*
 fl (ForgeLattice) -- Post-Quantum Cryptography Command Line Tool
@@ -65,7 +65,10 @@ Flags:
   -h, --help   help for this command
 
 Use " [command] --help" for more information about a command.
+`````````
 
+**`kem` Available Commands**
+``````bash
 ./fl help kem                                                                                                                                     git:dev-go-version*
 CRYSTALS-Kyber (ML-KEM) operations
 
@@ -81,7 +84,10 @@ Flags:
   -h, --help   help for kem
 
 Use " kem [command] --help" for more information about a command.
+`````````
 
+**`dsa` Available Commands**
+``````bash
 ./fl help dsa                                                                                                                                     git:dev-go-version*
 CRYSTALS-Dilithium (ML-DSA) operations
 
