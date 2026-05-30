@@ -29,6 +29,11 @@ ForgeLattice is an **experimental research library**.
 
 Use it at your own risk.
 
+### Installation
+```
+ go get github.com/Deeptiman/forgelattice
+```
+
 ### Currently Supported Algorithms
 
 | Algorithm              | NIST Standard          | Security Levels                  | Module Path                     |
@@ -105,18 +110,13 @@ Flags:
 Use " dsa [command] --help" for more information about a command.
 `````````
 
-### Watch Demo
+### CLI Demo (asciinema)
 
 **CRYSTALS-Kyber (ML-KEM) operations**
 [![asciicast](https://asciinema.org/a/nQys9YkDVBJaUNGp.svg)](https://asciinema.org/a/nQys9YkDVBJaUNGp)
 
 **CRYSTALS-Dilithium (ML-DSA) operations**
 [![asciicast](https://asciinema.org/a/dO6qBs3lOxsJGl8F.svg)](https://asciinema.org/a/dO6qBs3lOxsJGl8F)
-
-### Installation
-```
- go get github.com/Deeptiman/forgelattice
-```
 
 ### Testing
 You can each module separately by running the package-level `go-test`
