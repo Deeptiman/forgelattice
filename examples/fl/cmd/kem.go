@@ -59,7 +59,7 @@ var kyberKeyGenCmd = &cobra.Command{
 
 var kyberEncapsCmd = &cobra.Command{
 	Use:   "encaps",
-	Short: "Encapsulate (KEM Encaps)",
+	Short: "Kyber Key Encapsulation Mechanism.",
 	Run: func(cmd *cobra.Command, args []string) {
 		msgHex, _ := cmd.Flags().GetString("message")
 		pkHex, _ := cmd.Flags().GetString("pubKey")
@@ -111,10 +111,10 @@ var kyberEncapsCmd = &cobra.Command{
 
 var kyberDecapsCmd = &cobra.Command{
 	Use:   "decaps",
-	Short: "Decapsulate (Recover shared secret)",
+	Short: "Kyber Decapsulation Mechanism (Recover shared secret)",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctHex, _ := cmd.Flags().GetString("ciphertext")
-		skHex, _ := cmd.Flags().GetString("privKey")
+		privKeyHex, _ := cmd.Flags().GetString("privKey")
 		level, _ := cmd.Flags().GetString("level")
 
 		if ctHex == "" {
@@ -123,7 +123,7 @@ var kyberDecapsCmd = &cobra.Command{
 			return
 		}
 
-		if skHex == "" {
+		if privKeyHex == "" {
 			fmt.Println("Error: --privKey is required")
 			cmd.Usage()
 			return
@@ -136,10 +136,10 @@ var kyberDecapsCmd = &cobra.Command{
 		}
 
 		ct := mustHex(ctHex)
-		skBytes := mustHex(skHex)
+		privKeyBytes := mustHex(privKeyHex)
 
 		k := kem.WithFIPS203(kem.ToLevel(fmt.Sprintf("ML-KEM-%s", level)))
-		sk := k.UnPackPrivateKey(skBytes)
+		sk := k.UnPackPrivateKey(privKeyBytes)
 		ss := k.Decapsulate(sk, ct)
 
 		fmt.Println("✅ Kyber Decapsulation Successful")

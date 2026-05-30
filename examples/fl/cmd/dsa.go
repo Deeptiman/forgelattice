@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Deeptiman/forgelattice/crypto/dsa"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 var dilithiumCmd = &cobra.Command{
@@ -43,8 +44,8 @@ var dilithiumKeyGenCmd = &cobra.Command{
 		output := KeyPairOutput{
 			Algorithm:  "ML-DSA",
 			Level:      level,
-			PublicKey:  hex.EncodeToString(d.MarshalPublicKey(pk)),
-			PrivateKey: hex.EncodeToString(d.MarshalPrivateKey(sk)),
+			PublicKey:  strings.ToUpper(hex.EncodeToString(d.MarshalPublicKey(pk))),
+			PrivateKey: strings.ToUpper(hex.EncodeToString(d.MarshalPrivateKey(sk))),
 		}
 		data, _ := json.MarshalIndent(output, "", "  ")
 		fmt.Println(string(data))
@@ -52,7 +53,7 @@ var dilithiumKeyGenCmd = &cobra.Command{
 }
 
 var dilithiumSignCmd = &cobra.Command{
-	Use:   "dsa",
+	Use:   "sign",
 	Short: "Sign a message using Dilithium",
 	Run: func(cmd *cobra.Command, args []string) {
 		skHex, _ := cmd.Flags().GetString("privKey")
@@ -88,7 +89,7 @@ var dilithiumSignCmd = &cobra.Command{
 			Algorithm: "ML-DSA",
 			Level:     level,
 			Size:      fmt.Sprintf("(%d bytes)", len(signature)),
-			Signature: hex.EncodeToString(signature),
+			Signature: strings.ToUpper(hex.EncodeToString(signature)),
 		}
 		data, _ := json.MarshalIndent(output, "", "  ")
 		fmt.Println(string(data))
@@ -133,11 +134,17 @@ var dilithiumVerifyCmd = &cobra.Command{
 		sigBytes := mustHex(sigHex)
 		d := dsa.WithFIPS204(dsa.ToLevel(fmt.Sprintf("ML-DSA-%s", level)))
 		valid := d.Verify(pkBytes, sigBytes, msgBytes)
-		if valid {
-			fmt.Println("✅ Signature is VALID")
-		} else {
-			fmt.Println("❌ Signature is INVALID")
+		output := VerifyOutput{
+			Algorithm: "ML-DSA",
+			Level:     level,
 		}
+		if valid {
+			output.SigState = "✅ Signature is VALID"
+		} else {
+			output.SigState = "❌ Signature is INVALID"
+		}
+		data, _ := json.MarshalIndent(output, "", "  ")
+		fmt.Println(string(data))
 	},
 }
 
