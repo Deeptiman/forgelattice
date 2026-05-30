@@ -43,7 +43,7 @@ A simple command line tool to demonstrate practical usage of the library.
 
 **Build the CLI**
 ```bash
-go build -o fl ./examples/fl
+make build-cli
 ````
 
 **`fl` Available Commands**

@@ -1,10 +1,13 @@
-.PHONY: all test lint tidy clean pkgs
+.PHONY: all build-cli test lint tidy clean pkgs
 
 all: test-kem test-sha3 test-dsa lint
 
 ## List all packages
 pkgs:
 	go list ./...
+
+build-cli:
+	go build -mod=mod -o fl ./examples/fl/main.go
 
 ## Ensure go.mod is clean
 tidy:
