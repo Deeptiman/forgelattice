@@ -1,6 +1,6 @@
 # ForgeLattice
 
-[![Go Version](https://img.shields.io/badge/Go-1.26-blue.svg)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.26-blue.svg)](https://go.dev/blog/go1.26)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PQC](https://img.shields.io/badge/Post--Quantum-Cryptography-8B00FF.svg)]()
 [![Status](https://img.shields.io/badge/Status-Experimental-orange.svg)]()
