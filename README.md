@@ -101,12 +101,10 @@ Use " dsa [command] --help" for more information about a command.
 
 ### Watch Demo
 
-*CRYSTALS-Kyber (ML-KEM) operations*
-
+**CRYSTALS-Kyber (ML-KEM) operations**
 [![asciicast](https://asciinema.org/a/nQys9YkDVBJaUNGp.svg)](https://asciinema.org/a/nQys9YkDVBJaUNGp)
 
-*CRYSTALS-Dilithium (ML-DSA) operations*
-
+**CRYSTALS-Dilithium (ML-DSA) operations**
 [![asciicast](https://asciinema.org/a/dO6qBs3lOxsJGl8F.svg)](https://asciinema.org/a/dO6qBs3lOxsJGl8F)
 
 ### Installation
